@@ -224,7 +224,7 @@ KNot        [Nn][Oo][Tt]
                                 *string_buf_ptr++ = '0';
                                 break;
                              case '"' :
-                                *string_buf_ptr++ = '0';
+                                *string_buf_ptr++ = '"';
                                 break;
                              case '\n' :
                                 break;
