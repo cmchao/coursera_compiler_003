@@ -77,6 +77,11 @@ DARROW          =>
                         /* do nothing */
                     }
 
+\*\)                {
+                        cool_yylval.error_msg = "Unmatched *)";
+                        return ERROR;
+                    }
+
 <ST_COMMENT>(.|\n)  { 
                         if (yyleng == 1 && yytext[0] == '*') {
                             yymore();
