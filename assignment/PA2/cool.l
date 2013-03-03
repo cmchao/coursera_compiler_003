@@ -94,18 +94,22 @@ KFalse      f[Aa][Ll][Ss][Ee]
  /*
   *  comments
   */
-\(\*                {
+--.*                {
+                    }
+"(*"                {
                         BEGIN(ST_COMMENT);
                         comment_level++;
                     }
---.*                {
-                    }
 
-\*\)                {
-                        cool_yylval.error_msg = "Unmatched *)";
-                        return ERROR;
+<ST_COMMENT>[^*\n]  {   }
+<ST_COMMENT>\n      {curr_lineno++;}
+<ST_COMMENT>"*"+")" {
+                        if (--comment_level == 0)
+                            BEGIN(INITIAL);
                     }
+<ST_COMMENT>"*"+.?  { }
 
+ /*
 <ST_COMMENT>(.|\n)  { 
                         if (yytext[0] == '*') {
                             char next = yyinput();
@@ -118,10 +122,16 @@ KFalse      f[Aa][Ll][Ss][Ee]
                             curr_lineno++;
                         }
                     }
+                    */
 
 <ST_COMMENT><<EOF>> {
                         BEGIN(INITIAL);
                         cool_yylval.error_msg = "EOF in comment";
+                        return ERROR;
+                    }
+
+"*)"                {
+                        cool_yylval.error_msg = "Unmatched *)";
                         return ERROR;
                     }
  /*
