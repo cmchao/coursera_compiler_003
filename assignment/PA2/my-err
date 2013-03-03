@@ -5,38 +5,27 @@ make: Leaving directory `/home/compilers/repo/coursera_compiler_003/assignment/P
 =====================================================================
 submission: ..
 
-	-1 (arith)	  arith example
-	-1 (atoi)	 atoi example
 	-1 (backslash)	 various backslashes in strings
 	-1 (backslash2)	 more backslashes in strings
-	-1 (book_list)	 sample program
 	-1 (comment_in_string)	 comment in string
 	-1 (escaped_chars_in_comment)	 escaped chars in comment
-	-1 (escapedunprintables)	 escaped nonprinting chars
-	-1 (hairyscary)	 hairyscary example
-	-1 (io)	 io example
-	-1 (keywords)	 all of the keywords
-	-1 (life)	 the life program
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
 	-1 (longcomment)	 a long comment test
 	-1 (longstring_escapedbackslashes)	 long strings with escaped characters
 	-1 (nestedcomment)	 nested comment
-	-1 (new_complex)	 a short program
 	-1 (opencomment)	 no matching closing comment
 	-1 (pathologicalstrings)	 some pathological strings
 	-1 (s03)	 EOF in single-line comment
 	-1 (s04)	 different types of whitespaces
-	-1 (simplestrings)	 simple strings 
-	-1 (stringcomment)	 strings and comments
 	-1 (stringwithescapes)	 a long string with escaped characters
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
 	-1 (wq0607-c3)	 sequence of quotes and backslashes
 	-1 (wq0607-c4)	 sequence of quotes, backslashes, and double-dash comment symbols
 =====================================================================
-You got a score of 34 out of 63.
+You got a score of 45 out of 63.
 
 Submit code: 
-34:e369853df766fa44e1ed0ff613f563bd
+45:6c8349cc7260ae62e3b1396831a8398f
 
