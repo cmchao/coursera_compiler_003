@@ -88,36 +88,19 @@ KFalse      f[Aa][Ll][Ss][Ee]
 
 %%
  /*
-  * keyword
-  */
-{KClass}            return CLASS;
-{KInherits}         return INHERITS;
-{KIf}               return IF;
-{KFi}               return FI;
-{KThen}             return THEN;
-{KElse}             return ELSE;
-{KWhile}            return WHILE;
-{KCase}             return CASE;
-{KEsac}             return ESAC;
-{KOf}               return OF;
-{KLoop}             return LOOP;
-{KPool}             return POOL;
-{KLet}              return LET;
-{KNew}              return NEW;
-{KIn}               return IN;
-{KIsvoid}           return ISVOID;
-{KNot}              return NOT;
-{KTrue}             { cool_yylval.boolean = true; return BOOL_CONST; }
-{KFalse}            { cool_yylval.boolean = false; return BOOL_CONST; }
- /*
   *  comments
   */
 \(\*                {
                         BEGIN(ST_COMMENT);
                     }
---.*\n              {
-                        curr_lineno++;
-                        /* do nothing */
+--.*\n?             {
+                        if (yytext[yyleng - 1] == '\n')
+                            curr_lineno++;
+                        
+                        char next = yyinput();
+                        if (next != EOF) {
+                            unput(next);
+                        }
                     }
 
 \*\)                {
@@ -143,6 +126,28 @@ KFalse      f[Aa][Ll][Ss][Ee]
                         cool_yylval.error_msg = "EOF in comment";
                         return ERROR;
                     }
+ /*
+  * keyword
+  */
+{KClass}            return CLASS;
+{KInherits}         return INHERITS;
+{KIf}               return IF;
+{KFi}               return FI;
+{KThen}             return THEN;
+{KElse}             return ELSE;
+{KWhile}            return WHILE;
+{KCase}             return CASE;
+{KEsac}             return ESAC;
+{KOf}               return OF;
+{KLoop}             return LOOP;
+{KPool}             return POOL;
+{KLet}              return LET;
+{KNew}              return NEW;
+{KIn}               return IN;
+{KIsvoid}           return ISVOID;
+{KNot}              return NOT;
+{KTrue}             { cool_yylval.boolean = true; return BOOL_CONST; }
+{KFalse}            { cool_yylval.boolean = false; return BOOL_CONST; }
 
  /*
   *  The multiple-character operators.
