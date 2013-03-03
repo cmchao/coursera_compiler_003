@@ -99,6 +99,7 @@ KFalse      f[Aa][Ll][Ss][Ee]
 {KWhile}            return WHILE;
 {KCase}             return CASE;
 {KEsac}             return ESAC;
+{KOf}               return OF;
 {KLoop}             return LOOP;
 {KPool}             return POOL;
 {KLet}              return LET;
