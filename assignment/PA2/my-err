@@ -9,15 +9,13 @@ submission: ..
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
 	-1 (longcomment)	 a long comment test
-	-1 (longstring_escapedbackslashes)	 long strings with escaped characters
 	-1 (nestedcomment)	 nested comment
 	-1 (opencomment)	 no matching closing comment
-	-1 (pathologicalstrings)	 some pathological strings
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
 =====================================================================
-You got a score of 53 out of 63.
+You got a score of 55 out of 63.
 
 Submit code: 
-53:d82c8d1619ad8176d665453cfb2e55f0
+55:b53b3a3d6ab90ce0268229151c9bde11
 

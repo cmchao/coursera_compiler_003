@@ -44,9 +44,12 @@ extern YYSTYPE cool_yylval;
  */
 #include <cstring>
 
-static bool str_outofbuf(void)
+static void str_append(const char in)
 {
-    return (string_buf_ptr - string_buf) == MAX_STR_CONST;
+    if ((string_buf_ptr - string_buf) == MAX_STR_CONST - 1)
+        cool_yylval.error_msg = "String constant too long";
+    else
+        *string_buf_ptr++ = in;
 }
 
 %}
@@ -219,36 +222,28 @@ KFalse      f[Aa][Ll][Ss][Ee]
                          char next = yyinput();
                          switch (next) {
                              case 'b' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\b';
+                                str_append('\b');
                                 break;
                              case 't' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\t';
+                                str_append('\t');
                                 break;
                              case 'n' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\n';
+                                str_append('\n');
                                 break;
                              case 'f' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\f';
+                                str_append('\f');
                                 break;
                              case '0' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '0';
+                                str_append('0');
                                 break;
                              case '"' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '"';
+                                str_append('"');
                                 break;
                              case '\\':
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\\';
+                                str_append('\\');
                                 break;
                              case '\n' :
-                                if (!str_outofbuf())
-                                    *string_buf_ptr++ = '\n';
+                                str_append('\n');
                                 curr_lineno++;
                                 break;
                              default : 
@@ -275,13 +270,10 @@ KFalse      f[Aa][Ll][Ss][Ee]
                     }
 
 <ST_STR>[^\\"\n]    {
-                        //printf("yes : %s\n", yytext);
-                        if (str_outofbuf()) {
-                            cool_yylval.error_msg = "String constant too long";
-                        } else if (yytext[0] == '\0') {
+                        if (yytext[0] == '\0') {
                             cool_yylval.error_msg = "String contains null character.";
                         } else {
-                            *string_buf_ptr++ = yytext[0];
+                            str_append(yytext[0]);
                         }
                     }
                     
