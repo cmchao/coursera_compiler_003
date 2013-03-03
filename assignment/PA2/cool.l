@@ -44,7 +44,11 @@ extern YYSTYPE cool_yylval;
  */
 #include <cstring>
 
-int num_rule = 0;
+static bool str_outofbuf(void)
+{
+    return (string_buf_ptr - string_buf) == MAX_STR_CONST;
+}
+
 %}
 
 /*
@@ -58,22 +62,18 @@ DARROW          =>
  */
 
 %x ST_COMMENT
+%x ST_STR
 
 %%
 
  /*
-  *  Nested comments
+  *  comments
   */
-
-
- /*
-  *  The multiple-character operators.
-  */
-                
 \(\*                {
                         BEGIN(ST_COMMENT);
                     }
 --.*\n              {
+                        curr_lineno++;
                         /* do nothing */
                     }
 
@@ -88,6 +88,10 @@ DARROW          =>
                         } else if (std::strcmp(yytext, "*)") == 0) {
                             BEGIN(INITIAL);
                         }
+
+                        if (yytext[0] == '\n') {
+                            curr_lineno++;
+                        }
                     }
 
 <ST_COMMENT><<EOF>> {
@@ -95,6 +99,84 @@ DARROW          =>
                         cool_yylval.error_msg = "EOF in comment";
                         return ERROR;
                     }
+
+ /*
+  * string
+  */ 
+\"                  {
+                        string_buf_ptr = string_buf;
+                        cool_yylval.error_msg = NULL;
+                        BEGIN(ST_STR);
+                    }
+<ST_STR>[^\\"]      {
+                        if ((string_buf_ptr - string_buf) == 1024) {
+                            cool_yylval.error_msg = "String constant too long";
+                        } else if (yytext[0] == '\0') {
+                            cool_yylval.error_msg = "String contains null character.";
+                        } else {
+                            *string_buf_ptr++ = yytext[0];
+                        }
+                    }
+<ST_STR>\n          {
+                        /* do nothing */
+                    }
+<ST_STR>\           {
+                         char next = yyinput();
+                         switch (next) {
+                             case 'b' :
+                                *string_buf_ptr++ = '\b';
+                                break;
+                             case 't' :
+                                *string_buf_ptr++ = '\t';
+                                break;
+                             case 'n' :
+                                *string_buf_ptr++ = '\n';
+                                break;
+                             case 'f' :
+                                *string_buf_ptr++ = '\f';
+                                break;
+                             case '0' :
+                                *string_buf_ptr++ = '0';
+                                break;
+                             case '"' :
+                                *string_buf_ptr++ = '0';
+                                break;
+                             case '\n' :
+                                break;
+                             default : 
+                                unput(next);
+                                break;
+                         }
+                    }
+<ST_STR>\"          {
+                        if (cool_yylval.error_msg != NULL) {
+                            BEGIN(INITIAL);
+                            return ERROR;
+                        } else {
+                            string_buf_ptr = '\0';
+                            cool_yylval.symbol = stringtable.add_string(string_buf);
+                            BEGIN(INITIAL);
+                            return STR_CONST;
+                        }
+                    }
+
+<ST_STR><<EOF>>     {
+                        BEGIN(INITIAL);
+                        cool_yylval.error_msg = "Unterminated string constant";
+                        return ERROR;
+                    }
+                    
+
+ /*
+  * string
+  */
+
+
+ /*
+  *  The multiple-character operators.
+  */
+                
+
 
  /* general rule */
 [ \n]               {
