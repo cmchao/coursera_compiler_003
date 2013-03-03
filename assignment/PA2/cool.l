@@ -44,6 +44,7 @@ extern YYSTYPE cool_yylval;
  */
 #include <cstring>
 
+int comment_level = 0;
 static void str_append(const char in)
 {
     if ((string_buf_ptr - string_buf) == MAX_STR_CONST - 1)
@@ -95,15 +96,9 @@ KFalse      f[Aa][Ll][Ss][Ee]
   */
 \(\*                {
                         BEGIN(ST_COMMENT);
+                        comment_level++;
                     }
---.*\n?             {
-                        if (yytext[yyleng - 1] == '\n')
-                            curr_lineno++;
-                        
-                        char next = yyinput();
-                        if (next != EOF) {
-                            unput(next);
-                        }
+--.*                {
                     }
 
 \*\)                {
