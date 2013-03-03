@@ -123,15 +123,16 @@ DARROW          =>
 "="                 return '=';
 "<-"                return ASSIGN;
 ":"                 return ':';
+","                 return ',';
 "class"             return CLASS;
 "inherits"          return INHERITS;
 
-[A-Z][A-Za-z0-9_]*   {
+[A-Z][A-Za-z0-9_]*  {
                         cool_yylval.symbol = idtable.add_string(yytext);
                         return TYPEID;
                     }
 
-[a-z][A-Za-z0-9_]*   {
+[a-z][A-Za-z0-9_]*  {
                         cool_yylval.symbol = idtable.add_string(yytext);
                         return OBJECTID;
                     }
