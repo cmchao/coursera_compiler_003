@@ -63,10 +63,9 @@ DARROW          =>
 
 %x ST_COMMENT
 %x ST_STR
-%x ST_CLASS
 
 KType       [A-Z][A-Za-z0-9_]*
-KObjet      [A-Za-z0-9]*
+KObject     [a-z][A-Za-z0-9_]*
 KClass      [Cc][Ll][Aa][Ss]{2,2}
 KInherits   [Ii][Nn][Hh][Ee][Rr][Ii][Tt][Ss]
 KIf         [Ii][Ff]
@@ -162,12 +161,12 @@ KNot        [Nn][Oo][Tt]
 ":"                 return ':';
 ","                 return ',';
 
-[A-Z][A-Za-z0-9_]*  {
+{KType}             {
                         cool_yylval.symbol = idtable.add_string(yytext);
                         return TYPEID;
                     }
 
-[a-z][A-Za-z0-9_]*  {
+{KObject}           {
                         cool_yylval.symbol = idtable.add_string(yytext);
                         return OBJECTID;
                     }
@@ -199,15 +198,6 @@ KNot        [Nn][Oo][Tt]
                         cool_yylval.error_msg = NULL;
                         BEGIN(ST_STR);
                     }
-<ST_STR>[^\\"\n]      {
-                        if (str_outofbuf()) {
-                            cool_yylval.error_msg = "String constant too long";
-                        } else if (yytext[0] == '\0') {
-                            cool_yylval.error_msg = "String contains null character.";
-                        } else {
-                            *string_buf_ptr++ = yytext[0];
-                        }
-                    }
 <ST_STR>\n          {
                         cool_yylval.error_msg = "Unterminated string constant";
                         BEGIN(INITIAL);
@@ -215,7 +205,7 @@ KNot        [Nn][Oo][Tt]
                         return ERROR;
                         /* do nothing */
                     }
-<ST_STR>\           {
+<ST_STR>\\          {
                          char next = yyinput();
                          switch (next) {
                              case 'b' :
@@ -259,6 +249,16 @@ KNot        [Nn][Oo][Tt]
                         BEGIN(INITIAL);
                         cool_yylval.error_msg = "Unterminated string constant";
                         return ERROR;
+                    }
+
+<ST_STR>[^\\"\n]    {
+                        if (str_outofbuf()) {
+                            cool_yylval.error_msg = "String constant too long";
+                        } else if (yytext[0] == '\0') {
+                            cool_yylval.error_msg = "String contains null character.";
+                        } else {
+                            *string_buf_ptr++ = yytext[0];
+                        }
                     }
                     
 
