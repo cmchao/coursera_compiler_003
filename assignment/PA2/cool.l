@@ -125,13 +125,14 @@ KFalse      f[Aa][Ll][Ss][Ee]
                     }
 
 <ST_COMMENT>(.|\n)  { 
-                        if (yyleng == 1 && yytext[0] == '*') {
-                            yymore();
-                        } else if (std::strcmp(yytext, "*)") == 0) {
-                            BEGIN(INITIAL);
-                        }
-
-                        if (yytext[0] == '\n') {
+                        if (yytext[0] == '*') {
+                            char next = yyinput();
+                            if (next == ')') {
+                                BEGIN(INITIAL);
+                            } else {
+                                unput(next);
+                            }
+                        } else if (yytext[0] == '\n') {
                             curr_lineno++;
                         }
                     }
@@ -247,7 +248,7 @@ KFalse      f[Aa][Ll][Ss][Ee]
                             BEGIN(INITIAL);
                             return ERROR;
                         } else {
-                            string_buf_ptr = '\0';
+                            *string_buf_ptr = '\0';
                             cool_yylval.symbol = stringtable.add_string(string_buf);
                             BEGIN(INITIAL);
                             return STR_CONST;
@@ -261,6 +262,7 @@ KFalse      f[Aa][Ll][Ss][Ee]
                     }
 
 <ST_STR>[^\\"\n]    {
+                        //printf("yes : %s\n", yytext);
                         if (str_outofbuf()) {
                             cool_yylval.error_msg = "String constant too long";
                         } else if (yytext[0] == '\0') {
