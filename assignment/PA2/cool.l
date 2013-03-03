@@ -209,22 +209,28 @@ KNot        [Nn][Oo][Tt]
                          char next = yyinput();
                          switch (next) {
                              case 'b' :
-                                *string_buf_ptr++ = '\b';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\b';
                                 break;
                              case 't' :
-                                *string_buf_ptr++ = '\t';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\t';
                                 break;
                              case 'n' :
-                                *string_buf_ptr++ = '\n';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\n';
                                 break;
                              case 'f' :
-                                *string_buf_ptr++ = '\f';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\f';
                                 break;
                              case '0' :
-                                *string_buf_ptr++ = '0';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '0';
                                 break;
                              case '"' :
-                                *string_buf_ptr++ = '"';
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '"';
                                 break;
                              case '\n' :
                                 break;
