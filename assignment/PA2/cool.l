@@ -65,7 +65,46 @@ DARROW          =>
 %x ST_STR
 %x ST_CLASS
 
+KType       [A-Z][A-Za-z0-9_]*
+KObjet      [A-Za-z0-9]*
+KClass      [Cc][Ll][Aa][Ss]{2,2}
+KInherits   [Ii][Nn][Hh][Ee][Rr][Ii][Tt][Ss]
+KIf         [Ii][Ff]
+KFi         [Ff][Ii]
+KThen       [Tt][Hh][Ee][Nn]
+KElse       [Ee][Ll][Ss][Ee]
+KWhile      [Ww][Hh][Ii][Ll][Ee]
+KCase       [Cc][Aa][Ss][Ee]
+KEsac       [Ee][Ss][Aa][Cc]
+KOf         [Oo][Ff]
+KLoop       [Ll][Oo][Oo][Pp]
+KPool       [Pp][Oo][Oo][Ll]
+KLet        [Ll][Ee][Tt]
+KNew        [Nn][Ee][Ww]
+KIn         [Ii][Nn]
+KIsvoid     [Ii][Ss][Vv][Oo][Ii][Dd]
+KNot        [Nn][Oo][Tt]
+
 %%
+ /*
+  * keyword
+  */
+{KClass}            return CLASS;
+{KInherits}         return INHERITS;
+{KIf}               return IF;
+{KFi}               return FI;
+{KThen}             return THEN;
+{KElse}             return ELSE;
+{KWhile}            return WHILE;
+{KCase}             return CASE;
+{KEsac}             return ESAC;
+{KLoop}             return LOOP;
+{KPool}             return POOL;
+{KLet}              return LET;
+{KNew}              return NEW;
+{KIn}               return IN;
+{KIsvoid}           return ISVOID;
+{KNot}              return NOT;
 
  /*
   *  comments
@@ -113,8 +152,6 @@ DARROW          =>
 "@"                 return '@';
 "<"                 return '<';
 "<="                return LE;
-"not"               return NOT;
-"isvoid"            return ISVOID;
 "("                 return '(';
 ")"                 return ')';
 "{"                 return '{';
@@ -124,8 +161,6 @@ DARROW          =>
 "<-"                return ASSIGN;
 ":"                 return ':';
 ","                 return ',';
-"class"             return CLASS;
-"inherits"          return INHERITS;
 
 [A-Z][A-Za-z0-9_]*  {
                         cool_yylval.symbol = idtable.add_string(yytext);
@@ -136,14 +171,12 @@ DARROW          =>
                         cool_yylval.symbol = idtable.add_string(yytext);
                         return OBJECTID;
                     }
-                
 
- /* general rule */
-[ \n\t]             {
-                        if (yytext[0] == '\n') {
-                            curr_lineno++;
-                        }
+[0-9]+              {
+                        cool_yylval.symbol = inttable.add_string(yytext);
+                        return INT_CONST;
                     }
+                    
 
 
 {DARROW}		{ return (DARROW); }
@@ -229,6 +262,17 @@ DARROW          =>
                     }
                     
 
+ /* general rule */
+[ \n\t]             {
+                        if (yytext[0] == '\n') {
+                            curr_lineno++;
+                        }
+                    }
+
+.                   {
+                        cool_yylval.error_msg = yytext;
+                        return ERROR;
+                    }
 
 
 %%
