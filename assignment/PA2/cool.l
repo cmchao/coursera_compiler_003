@@ -83,6 +83,8 @@ KNew        [Nn][Ee][Ww]
 KIn         [Ii][Nn]
 KIsvoid     [Ii][Ss][Vv][Oo][Ii][Dd]
 KNot        [Nn][Oo][Tt]
+KTrue       t[Rr][Uu][Ee]
+KFalse      f[Aa][Ll][Ss][Ee]
 
 %%
  /*
@@ -104,7 +106,8 @@ KNot        [Nn][Oo][Tt]
 {KIn}               return IN;
 {KIsvoid}           return ISVOID;
 {KNot}              return NOT;
-
+{KTrue}             { cool_yylval.boolean = true; return BOOL_CONST; }
+{KFalse}            { cool_yylval.boolean = false; return BOOL_CONST; }
  /*
   *  comments
   */
