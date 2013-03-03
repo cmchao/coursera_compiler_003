@@ -5,8 +5,6 @@ make: Leaving directory `/home/compilers/repo/coursera_compiler_003/assignment/P
 =====================================================================
 submission: ..
 
-	-1 (backslash)	 various backslashes in strings
-	-1 (backslash2)	 more backslashes in strings
 	-1 (escaped_chars_in_comment)	 escaped chars in comment
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
@@ -19,11 +17,9 @@ submission: ..
 	-1 (s04)	 different types of whitespaces
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
-	-1 (wq0607-c3)	 sequence of quotes and backslashes
-	-1 (wq0607-c4)	 sequence of quotes, backslashes, and double-dash comment symbols
 =====================================================================
-You got a score of 47 out of 63.
+You got a score of 51 out of 63.
 
 Submit code: 
-47:67c6a1e7ce56d3d6fa748ab6d9af3fd7
+51:2838023a778dfaecdc212708f721b788
 

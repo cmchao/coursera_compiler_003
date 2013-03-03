@@ -237,6 +237,10 @@ KFalse      f[Aa][Ll][Ss][Ee]
                                 if (!str_outofbuf())
                                     *string_buf_ptr++ = '"';
                                 break;
+                             case '\\':
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\\';
+                                break;
                              case '\n' :
                                 if (!str_outofbuf())
                                     *string_buf_ptr++ = '\n';
