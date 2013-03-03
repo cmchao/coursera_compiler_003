@@ -42,7 +42,9 @@ extern YYSTYPE cool_yylval;
 /*
  *  Add Your own definitions here
  */
+#include <cstring>
 
+int num_rule = 0;
 %}
 
 /*
@@ -50,6 +52,12 @@ extern YYSTYPE cool_yylval;
  */
 
 DARROW          =>
+
+/*
+ * lex condition
+ */
+
+%x ST_COMMENT
 
 %%
 
@@ -61,6 +69,34 @@ DARROW          =>
  /*
   *  The multiple-character operators.
   */
+                
+\(\*                {
+                        BEGIN(ST_COMMENT);
+                    }
+--.*\n              {
+                        /* do nothing */
+                    }
+
+<ST_COMMENT>(.|\n)  { 
+                        if (yyleng == 1 && yytext[0] == '*') {
+                            yymore();
+                        } else if (std::strcmp(yytext, "*)") == 0) {
+                            BEGIN(INITIAL);
+                        }
+                    }
+
+<ST_COMMENT><<EOF>> {
+                        BEGIN(INITIAL);
+                        cool_yylval.error_msg = "EOF in comment";
+                        return ERROR;
+                    }
+
+ /* general rule */
+[ \n]               {
+                        /* do nothing */
+                    }
+
+
 {DARROW}		{ return (DARROW); }
 
  /*
