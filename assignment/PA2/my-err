@@ -14,12 +14,11 @@ submission: ..
 	-1 (opencomment)	 no matching closing comment
 	-1 (pathologicalstrings)	 some pathological strings
 	-1 (s03)	 EOF in single-line comment
-	-1 (s04)	 different types of whitespaces
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
 =====================================================================
-You got a score of 51 out of 63.
+You got a score of 52 out of 63.
 
 Submit code: 
-51:2838023a778dfaecdc212708f721b788
+52:9a1158154dfa42caddbd0694a4e9bdc8
 

@@ -282,7 +282,7 @@ KFalse      f[Aa][Ll][Ss][Ee]
                     
 
  /* general rule */
-[ \n\t]             {
+[ \n\t\f\r\v]       {
                         if (yytext[0] == '\n') {
                             curr_lineno++;
                         }
