@@ -238,6 +238,9 @@ KFalse      f[Aa][Ll][Ss][Ee]
                                     *string_buf_ptr++ = '"';
                                 break;
                              case '\n' :
+                                if (!str_outofbuf())
+                                    *string_buf_ptr++ = '\n';
+                                curr_lineno++;
                                 break;
                              default : 
                                 unput(next);
