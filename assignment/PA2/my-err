@@ -1,21 +1,22 @@
 Grading .....
 make: Entering directory `/home/compilers/repo/coursera_compiler_003/assignment/PA2'
-make: `lexer' is up to date.
+flex -d -ocool-lex.cc cool.flex
+/bin/sh -ec 'g++ -MM -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 cool-lex.cc | sed '\''s/\(cool-lex\.o\)[ :]*/\1 cool-lex.d : /g'\'' > cool-lex.d'
+/bin/sh -ec 'g++ -MM -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 handle_flags.cc | sed '\''s/\(handle_flags\.o\)[ :]*/\1 handle_flags.d : /g'\'' > handle_flags.d'
+/bin/sh -ec 'g++ -MM -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 stringtab.cc | sed '\''s/\(stringtab\.o\)[ :]*/\1 stringtab.d : /g'\'' > stringtab.d'
+/bin/sh -ec 'g++ -MM -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 utilities.cc | sed '\''s/\(utilities\.o\)[ :]*/\1 utilities.d : /g'\'' > utilities.d'
+/bin/sh -ec 'g++ -MM -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 lextest.cc | sed '\''s/\(lextest\.o\)[ :]*/\1 lextest.d : /g'\'' > lextest.d'
+make: Leaving directory `/home/compilers/repo/coursera_compiler_003/assignment/PA2'
+make: Entering directory `/home/compilers/repo/coursera_compiler_003/assignment/PA2'
+g++ -g -Wall -Wno-unused -Wno-write-strings -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 -c cool-lex.cc
+g++ -g -Wall -Wno-unused -Wno-write-strings -I. -I/usr/class/cs143/cool/include/PA2 -I/usr/class/cs143/cool/src/PA2 lextest.o utilities.o stringtab.o handle_flags.o cool-lex.o -lfl -o lexer
 make: Leaving directory `/home/compilers/repo/coursera_compiler_003/assignment/PA2'
 =====================================================================
 submission: ..
 
-	-1 (escaped_chars_in_comment)	 escaped chars in comment
-	-1 (lineno2)	 line number test 2
-	-1 (lineno3)	 line number test 3
-	-1 (longcomment)	 a long comment test
-	-1 (nestedcomment)	 nested comment
-	-1 (opencomment)	 no matching closing comment
-	-1 (twice_512_nested_comments)	 many nested comments
-	-1 (wq0607-c2)	 sequences of block comments and strings
 =====================================================================
-You got a score of 55 out of 63.
+You got a score of 63 out of 63.
 
 Submit code: 
-55:b53b3a3d6ab90ce0268229151c9bde11
+63:03afdbd66e7929b125f8597834fa83a4
 

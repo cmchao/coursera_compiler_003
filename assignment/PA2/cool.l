@@ -101,28 +101,18 @@ KFalse      f[Aa][Ll][Ss][Ee]
                         comment_level++;
                     }
 
-<ST_COMMENT>[^*\n]  {   }
-<ST_COMMENT>\n      {curr_lineno++;}
+<ST_COMMENT>[^*\n\\] 
+<ST_COMMENT>\n      curr_lineno++;
 <ST_COMMENT>"*"+")" {
                         if (--comment_level == 0)
                             BEGIN(INITIAL);
                     }
-<ST_COMMENT>"*"+.?  { }
+<ST_COMMENT>"*"+.? 
+                    
+<ST_COMMENT>"(*"    comment_level++;
+                    
+<ST_COMMENT>\\*     
 
- /*
-<ST_COMMENT>(.|\n)  { 
-                        if (yytext[0] == '*') {
-                            char next = yyinput();
-                            if (next == ')') {
-                                BEGIN(INITIAL);
-                            } else {
-                                unput(next);
-                            }
-                        } else if (yytext[0] == '\n') {
-                            curr_lineno++;
-                        }
-                    }
-                    */
 
 <ST_COMMENT><<EOF>> {
                         BEGIN(INITIAL);
