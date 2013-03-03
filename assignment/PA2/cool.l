@@ -63,6 +63,7 @@ DARROW          =>
 
 %x ST_COMMENT
 %x ST_STR
+%x ST_CLASS
 
 %%
 
@@ -101,8 +102,64 @@ DARROW          =>
                     }
 
  /*
-  * string
-  */ 
+  *  The multiple-character operators.
+  */
+"*"                 return '*';
+"+"                 return '+';
+"-"                 return '-';
+"/"                 return '/';
+"~"                 return '~';
+"."                 return '.';
+"@"                 return '@';
+"<"                 return '<';
+"<="                return LE;
+"not"               return NOT;
+"isvoid"            return ISVOID;
+"("                 return '(';
+")"                 return ')';
+"{"                 return '{';
+"}"                 return '}';
+";"                 return ';';
+"="                 return '=';
+"<-"                return ASSIGN;
+":"                 return ':';
+"class"             return CLASS;
+"inherits"          return INHERITS;
+
+[A-Z][A-Za-z0-9_]*   {
+                        cool_yylval.symbol = idtable.add_string(yytext);
+                        return TYPEID;
+                    }
+
+[a-z][A-Za-z0-9_]*   {
+                        cool_yylval.symbol = idtable.add_string(yytext);
+                        return OBJECTID;
+                    }
+                
+
+ /* general rule */
+[ \n\t]             {
+                        if (yytext[0] == '\n') {
+                            curr_lineno++;
+                        }
+                    }
+
+
+{DARROW}		{ return (DARROW); }
+
+ /*
+  * Keywords are case-insensitive except for the values true and false,
+  * which must begin with a lower-case letter.
+  */
+
+
+ /*
+  *  String constants (C syntax)
+  *  Escape sequence \c is accepted for all characters c. Except for 
+  *  \n \t \b \f, the result is c.
+  *
+  */
+
 \"                  {
                         string_buf_ptr = string_buf;
                         cool_yylval.error_msg = NULL;
@@ -171,37 +228,6 @@ DARROW          =>
                     }
                     
 
- /*
-  * string
-  */
-
-
- /*
-  *  The multiple-character operators.
-  */
-                
-
-
- /* general rule */
-[ \n]               {
-                        /* do nothing */
-                    }
-
-
-{DARROW}		{ return (DARROW); }
-
- /*
-  * Keywords are case-insensitive except for the values true and false,
-  * which must begin with a lower-case letter.
-  */
-
-
- /*
-  *  String constants (C syntax)
-  *  Escape sequence \c is accepted for all characters c. Except for 
-  *  \n \t \b \f, the result is c.
-  *
-  */
 
 
 %%
