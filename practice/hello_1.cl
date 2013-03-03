@@ -27,4 +27,6 @@ class Main {
         1;
         }
     };
-};
+};  -- comment --
+
+-- this is a comment

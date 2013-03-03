@@ -108,8 +108,8 @@ DARROW          =>
                         cool_yylval.error_msg = NULL;
                         BEGIN(ST_STR);
                     }
-<ST_STR>[^\\"]      {
-                        if ((string_buf_ptr - string_buf) == 1024) {
+<ST_STR>[^\\"\n]      {
+                        if (str_outofbuf()) {
                             cool_yylval.error_msg = "String constant too long";
                         } else if (yytext[0] == '\0') {
                             cool_yylval.error_msg = "String contains null character.";
@@ -118,6 +118,10 @@ DARROW          =>
                         }
                     }
 <ST_STR>\n          {
+                        cool_yylval.error_msg = "Unterminated string constant";
+                        BEGIN(INITIAL);
+                        curr_lineno++;
+                        return ERROR;
                         /* do nothing */
                     }
 <ST_STR>\           {
