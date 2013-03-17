@@ -217,25 +217,27 @@
     expr_star
     :   /* no expr */
         { $$ = nil_Expressions(); }
-    | ',' expr      /* one expr */
-        {   $$ = single_Expressions($2); }
-    | expr_star ','  expr  /* few expr */
-        {   $$  = append_Classes($1, single_Classes($3)); }
+    | expr      /* one expr */
+        {   $$ = single_Expressions($1); }
+    | expr ','  /* one expr */
+        {   $$  = single_Expressions($1); }
+    | expr_star ',' expr/* few expr */
+        {   $$  = append_Expressions($1, single_Expressions($3)); }
     ;
 
     expr_plus
     : expr ';'      /* one expr */
         {   $$ = single_Expressions($1); }
     | expr_plus expr ';'  /* few expr */
-        {   $$  = append_Classes($1, single_Classes($2)); }
+        {   $$  = append_Expressions($1, single_Expressions($2)); }
     ;
 
     expr
     : OBJECTID ASSIGN expr
         {   $$ = assign($1, $3); }
-    | expr '[' '@' TYPEID ']' '.' OBJECTID '(' '[' expr expr_star ']' ')'
+    | expr '[' '@' TYPEID ']' '.' OBJECTID '('  expr_star  ')'
         {}
-    | OBJECTID '(' '[' expr expr_star ']' ')'
+    | OBJECTID '('  expr_star  ')'
         {}
     | IF expr THEN expr ELSE expr FI
         {   $$ = cond($2, $4, $6); }
