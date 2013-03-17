@@ -146,6 +146,16 @@
     %type <features> dummy_feature_list
     
     /* Precedence declarations go here. */
+    %right ASSIGN
+    %left NOT
+    %nonassoc LE '<' '='
+    %left '+' '-'
+    %left '*' '/'
+    %left ISVOID
+    %left '~'
+    %left '@'
+    %left '.'
+
     
     
     %%
@@ -209,7 +219,7 @@
         {   $$ = nil_Features(); }
     | feature ';'
         {   $$ = single_Features($1); }
-    | feature_list feature
+    | feature_list feature ';'
         {   $$ = append_Features($1, single_Features($2)); }
     ;
 
@@ -242,8 +252,10 @@
     expr
     : OBJECTID ASSIGN expr
         {   $$ = assign($1, $3); }
-    | expr '[' '@' TYPEID ']' '.' OBJECTID '('  expr_star  ')'
-        {   $$ = static_dispatch($1, $4, $7, $9); }
+    | expr '.' OBJECTID '('  expr_star  ')'
+        {   $$ = dispatch($1, $3, $5); }
+    | expr '@' TYPEID '.' OBJECTID '('  expr_star  ')'
+        {   $$ = static_dispatch($1, $3, $5, $7); }
     | OBJECTID '('  expr_star  ')'
         {   $$ = dispatch(object(idtable.add_string("Self")), $1, $3); }
     | IF expr THEN expr ELSE expr FI
