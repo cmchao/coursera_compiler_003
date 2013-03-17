@@ -186,6 +186,7 @@
         }
     | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
         {   $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
+    | error
     ;
 
     formal
