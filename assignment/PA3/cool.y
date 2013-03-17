@@ -199,55 +199,55 @@
 
     expr
     : OBJECTID ASSIGN expr
-        {}
+        {   $$ = assign($1, $3); }
     | expr '[' '@' TYPEID ']' '.' OBJECTID '(' '[' expr expr_star ']' ')'
         {}
     | OBJECTID '(' '[' expr expr_star ']' ')'
         {}
     | IF expr THEN expr ELSE expr FI
-        {}
+        {   $$ = cond($2, $4, $6); }
     | WHILE expr LOOP expr POOL
-        {}
+        {   $$ = loop($2, $4); }
     | '{' expr_plus '}'
-        {}
+        {   $$ = expr_plus; }
     /* to do */
     | LET OBJECTID ':' TYPEID '[' ASSIGN expr IN expr 
-        {}
+        {   $$ = let($2, $4, $7, $9); }
     /* to do */
     | CASE expr OF OBJECTID ':' TYPEID DARROW expr ',' ESAC
         {}
     | NEW expr
-        {}
+        {   $$ = new_($2);      }
     | ISVOID expr
-        {}
+        {   $$ = isvoid($2);    }
     | expr '+' expr
-        {}
+        {   $$ = plus($1, $3); }
     | expr '-' expr
-        {}
+        {   $$ = sub($1, $3); }
     | expr '*' expr
-        {}
+        {   $$ = mul($1, $3); }
     | expr '/' expr
-        {}
+        {   $$ = divide($1, $3); }
     | '~' expr
-        {}
+        {   $$ = neq($2); }
     | expr '<' expr
-        {}
+        {   $$ = lt($1, $3); }
     | expr LE expr
-        {}
+        {   $$ = leq($1, $3); }
     | expr '=' expr
-        {}
+        {   $$ = eq($1, $3); }
     | NOT expr
-        {}
+        {   $$ = comp($2); }
     | '(' expr ')'
-        {}
+        {   $$ = expr}
     | OBJECTID
-        {}
+        {   $$ = object($1); }
     | INT_CONST
-        {}
+        {   $$ = int_const($1); }
     | STR_CONST
-        {}
+        {   $$ = string_const($1); }
     | BOOL_CONST
-        {}
+        {   $$ = bool_const($1); }
 
 
     
