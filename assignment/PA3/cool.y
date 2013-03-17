@@ -172,7 +172,7 @@
         {   $$ = single_Classes($1);
             parse_results = $$; 
         }
-    | class_list class	/* several classes */
+    | class_list class /* several classes */
         {   $$ = append_Classes($1,single_Classes($2)); 
             parse_results = $$; 
         }
@@ -190,18 +190,16 @@
 
     formal
     : OBJECTID ':' TYPEID
-        {}
+        {   $$ = formal($1, $3); }
     ;
 
     formal_list
     : 
-        { $$ = nil_Formals(); }
+        {   $$ = nil_Formals(); }
     | formal
-        { $$ = single_Formals($1); }
-    | formal ',' 
-        { $$ = single_Formals($1); }
-    | formal_list formal
-        { $$ = append_Formals($1, single_Formals($2)); }
+        {   $$ = single_Formals($1); }
+    | formal_list ',' formal
+        {   $$ = append_Formals($1, single_Formals($3)); }
     ;
 
     feature
@@ -228,8 +226,6 @@
         { $$ = nil_Expressions(); }
     | expr      /* one expr */
         {   $$ = single_Expressions($1); }
-    | expr ','  /* one expr */
-        {   $$  = single_Expressions($1); }
     | expr_star ',' expr/* few expr */
         {   $$  = append_Expressions($1, single_Expressions($3)); }
     ;
