@@ -133,10 +133,10 @@
     %type <program>     program
     %type <class_>      class
     %type <classes>     class_list
-    /*
+    %type <feature>     feature
+    %type <features>    feature_list
     %type <formal>      formal
     %type <formals>     formal_list
-    */
     %type <expression>  expr
     %type <expressions> expr_star
     %type <expressions> expr_plus
@@ -173,13 +173,46 @@
     
     /* If no parent is specified, the class inherits from the Object class. */
     class	
-    : CLASS TYPEID '{' dummy_feature_list '}' ';'
+    : CLASS TYPEID '{' feature_list '}' ';'
         {   $$ = class_($2,idtable.add_string("Object"),$4,
             stringtable.add_string(curr_filename)); 
         }
     | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
         {   $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
     ;
+
+    formal
+    : OBJECTID ':' TYPEID
+        {}
+    ;
+
+    formal_list
+    : 
+        { $$ = nil_Formals(); }
+    | formal
+        { $$ = single_Formals($1); }
+    | formal ',' 
+        { $$ = single_Formals($1); }
+    | formal_list formal
+        { $$ = append_Formals($1, $2); }
+    ;
+
+    feature
+    : OBJECTID '(' '[' formal_list ']' '0' ':' TYPEID '{' expr '}'
+        {   $$ = method($1, $4, $8, $10); }
+    | OBJECTID ':' TYPEID '[' ASSIGN expr ']'
+        {   $$ = attr($1, $3, $6); }
+    ;
+
+    feature_list
+    : 
+        {   $$ = nil_Features(); }
+    | feature ';'
+        {   $$ = single_Features($1); }
+    | feature_list feature
+        {   $$ = append_Features($1, $2)}
+    ;
+    
 
     expr_star
     :   /* no expr */
@@ -248,6 +281,7 @@
         {   $$ = string_const($1); }
     | BOOL_CONST
         {   $$ = bool_const($1); }
+    ;
 
 
     
