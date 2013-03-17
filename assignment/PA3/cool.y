@@ -140,10 +140,7 @@
     %type <expression>  expr
     %type <expressions> expr_star
     %type <expressions> expr_plus
-    /*
-    %type <case_>       case
-    %type <casees>      case_list
-    */
+    %type <cases>      case_list
     
     /* You will want to change the following line. */
     %type <features> dummy_feature_list
@@ -215,7 +212,6 @@
     | feature_list feature
         {   $$ = append_Features($1, single_Features($2)); }
     ;
-    
 
     expr_star
     :   /* no expr */
@@ -227,6 +223,14 @@
     | expr_star ',' expr/* few expr */
         {   $$  = append_Expressions($1, single_Expressions($3)); }
     ;
+
+    case_list
+    : OBJECTID ':' TYPEID DARROW expr ';'
+        {   $$ = single_Cases(branch($1, $3, $5)); }
+    | case_list OBJECTID ':' TYPEID DARROW expr ';'
+        {   $$ = append_Cases($1, single_Cases(branch($2, $4, $6))); }
+    ;
+
 
     expr_plus
     : expr ';'      /* one expr */
@@ -249,11 +253,12 @@
     | '{' expr_plus '}'
         {   $$ = block($2); }
     /* to do */
-    | LET OBJECTID ':' TYPEID '[' ASSIGN expr IN expr 
-        {   $$ = let($2, $4, $7, $9); }
-    /* to do */
-    | CASE expr OF OBJECTID ':' TYPEID DARROW expr ',' ESAC
-        {}
+    | LET OBJECTID ':' TYPEID IN expr 
+        {   $$ = let($2, $4, no_expr(), $6); }
+    | LET OBJECTID ':' TYPEID ASSIGN expr IN expr 
+        {   $$ = let($2, $4, $6, $8); }
+    | CASE expr OF case_list ESAC
+        {   $$ = typcase($2, $4); }
     | NEW TYPEID
         {   $$ = new_($2); }
     | ISVOID expr
