@@ -130,9 +130,20 @@
     documentation for details). */
     
     /* Declare types for the grammar's non-terminals. */
-    %type <program> program
-    %type <classes> class_list
-    %type <class_> class
+    %type <program>     program
+    %type <class_>      class
+    %type <classes>     class_list
+    /*
+    %type <formal>      formal
+    %type <formals>     formal_list
+    */
+    %type <expression>  expr
+    %type <expressions> expr_star
+    %type <expressions> expr_plus
+    /*
+    %type <case_>       case
+    %type <casees>      case_list
+    */
     
     /* You will want to change the following line. */
     %type <features> dummy_feature_list
@@ -144,25 +155,101 @@
     /* 
     Save the root of the abstract syntax tree in a global variable.
     */
-    program	: class_list	{ @$ = @1; ast_root = program($1); }
+    program	
+    : class_list	
+        {   @$ = @1; ast_root = program($1); }
     ;
     
     class_list
     : class			/* single class */
-    { $$ = single_Classes($1);
-    parse_results = $$; }
+        {   $$ = single_Classes($1);
+            parse_results = $$; 
+        }
     | class_list class	/* several classes */
-    { $$ = append_Classes($1,single_Classes($2)); 
-    parse_results = $$; }
+        {   $$ = append_Classes($1,single_Classes($2)); 
+            parse_results = $$; 
+        }
     ;
     
     /* If no parent is specified, the class inherits from the Object class. */
-    class	: CLASS TYPEID '{' dummy_feature_list '}' ';'
-    { $$ = class_($2,idtable.add_string("Object"),$4,
-    stringtable.add_string(curr_filename)); }
+    class	
+    : CLASS TYPEID '{' dummy_feature_list '}' ';'
+        {   $$ = class_($2,idtable.add_string("Object"),$4,
+            stringtable.add_string(curr_filename)); 
+        }
     | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
-    { $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
+        {   $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
     ;
+
+    expr_star
+    :   /* no expr */
+        { $$ = nil_Expressions(); }
+    | ',' expr      /* one expr */
+        {   $$ = single_Expressions($2); }
+    | expr_star ','  expr  /* few expr */
+        {   $$  = append_Classes($1, single_Classes($3)); }
+    ;
+
+    expr_plus
+    : expr ';'      /* one expr */
+        {   $$ = single_Expressions($1); }
+    | expr_plus expr ';'  /* few expr */
+        {   $$  = append_Classes($1, single_Classes($2)); }
+    ;
+
+    expr
+    : OBJECTID ASSIGN expr
+        {}
+    | expr '[' '@' TYPEID ']' '.' OBJECTID '(' '[' expr expr_star ']' ')'
+        {}
+    | OBJECTID '(' '[' expr expr_star ']' ')'
+        {}
+    | IF expr THEN expr ELSE expr FI
+        {}
+    | WHILE expr LOOP expr POOL
+        {}
+    | '{' expr_plus '}'
+        {}
+    /* to do */
+    | LET OBJECTID ':' TYPEID '[' ASSIGN expr IN expr 
+        {}
+    /* to do */
+    | CASE expr OF OBJECTID ':' TYPEID DARROW expr ',' ESAC
+        {}
+    | NEW expr
+        {}
+    | ISVOID expr
+        {}
+    | expr '+' expr
+        {}
+    | expr '-' expr
+        {}
+    | expr '*' expr
+        {}
+    | expr '/' expr
+        {}
+    | '~' expr
+        {}
+    | expr '<' expr
+        {}
+    | expr LE expr
+        {}
+    | expr '=' expr
+        {}
+    | NOT expr
+        {}
+    | '(' expr ')'
+        {}
+    | OBJECTID
+        {}
+    | INT_CONST
+        {}
+    | STR_CONST
+        {}
+    | BOOL_CONST
+        {}
+
+
     
     /* Feature list may be empty, but no empty features in list. */
     dummy_feature_list:		/* empty */
