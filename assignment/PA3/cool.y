@@ -194,7 +194,7 @@
     | formal ',' 
         { $$ = single_Formals($1); }
     | formal_list formal
-        { $$ = append_Formals($1, $2); }
+        { $$ = append_Formals($1, single_Formals($2)); }
     ;
 
     feature
@@ -210,7 +210,7 @@
     | feature ';'
         {   $$ = single_Features($1); }
     | feature_list feature
-        {   $$ = append_Features($1, $2)}
+        {   $$ = append_Features($1, single_Features($2)); }
     ;
     
 
@@ -244,15 +244,15 @@
     | WHILE expr LOOP expr POOL
         {   $$ = loop($2, $4); }
     | '{' expr_plus '}'
-        {   $$ = expr_plus; }
+        {   $$ = block($2); }
     /* to do */
     | LET OBJECTID ':' TYPEID '[' ASSIGN expr IN expr 
         {   $$ = let($2, $4, $7, $9); }
     /* to do */
     | CASE expr OF OBJECTID ':' TYPEID DARROW expr ',' ESAC
         {}
-    | NEW expr
-        {   $$ = new_($2);      }
+    | NEW TYPEID
+        {   $$ = new_($2); }
     | ISVOID expr
         {   $$ = isvoid($2);    }
     | expr '+' expr
@@ -264,7 +264,7 @@
     | expr '/' expr
         {   $$ = divide($1, $3); }
     | '~' expr
-        {   $$ = neq($2); }
+        {   $$ = neg($2); }
     | expr '<' expr
         {   $$ = lt($1, $3); }
     | expr LE expr
@@ -274,7 +274,7 @@
     | NOT expr
         {   $$ = comp($2); }
     | '(' expr ')'
-        {   $$ = expr}
+        {   $$ = $2; }
     | OBJECTID
         {   $$ = object($1); }
     | INT_CONST
