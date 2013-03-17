@@ -236,9 +236,9 @@
     : OBJECTID ASSIGN expr
         {   $$ = assign($1, $3); }
     | expr '[' '@' TYPEID ']' '.' OBJECTID '('  expr_star  ')'
-        {}
+        {   $$ = static_dispatch($1, $4, $7, $9); }
     | OBJECTID '('  expr_star  ')'
-        {}
+        {   $$ = dispatch(object(idtable.add_string("Self")), $1, $3); }
     | IF expr THEN expr ELSE expr FI
         {   $$ = cond($2, $4, $6); }
     | WHILE expr LOOP expr POOL
