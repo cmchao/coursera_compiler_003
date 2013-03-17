@@ -198,10 +198,13 @@
     ;
 
     feature
-    : OBJECTID '(' '[' formal_list ']' '0' ':' TYPEID '{' expr '}'
-        {   $$ = method($1, $4, $8, $10); }
-    | OBJECTID ':' TYPEID '[' ASSIGN expr ']'
-        {   $$ = attr($1, $3, $6); }
+    : OBJECTID '(' formal_list ')' ':' TYPEID '{' expr '}'
+        {   $$ = method($1, $3, $6, $8); }
+    | OBJECTID ':' TYPEID
+        {   $$ = attr($1, $3, no_expr()); }
+
+    | OBJECTID ':' TYPEID ASSIGN expr
+        {   $$ = attr($1, $3, $5); }
     ;
 
     feature_list
