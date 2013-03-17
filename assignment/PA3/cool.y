@@ -211,6 +211,7 @@
 
     | OBJECTID ':' TYPEID ASSIGN expr
         {   $$ = attr($1, $3, $5); }
+    | error
     ;
 
     feature_list
@@ -300,6 +301,7 @@
         {   $$ = string_const($1); }
     | BOOL_CONST
         {   $$ = bool_const($1); }
+    | error
     ;
 
 
