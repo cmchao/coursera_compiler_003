@@ -260,6 +260,8 @@
         {   $$ = cond($2, $4, $6); }
     | WHILE expr LOOP expr POOL
         {   $$ = loop($2, $4); }
+    | WHILE expr LOOP expr error
+        {}
     | '{' expr_plus '}'
         {   $$ = block($2); }
     /* to do */
