@@ -137,7 +137,7 @@
     %type <features>    feature_list
     %type <formal>      formal
     %type <formals>     formal_list
-    %type <expression>  expr
+    %type <expression>  expr let_list
     %type <expressions> expr_star
     %type <expressions> expr_plus
     %type <cases>      case_list
@@ -184,7 +184,7 @@
         {   $$ = class_($2,idtable.add_string("Object"),$4,
             stringtable.add_string(curr_filename)); 
         }
-    | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
+    | CLASS TYPEID INHERITS TYPEID '{' feature_list '}' ';'
         {   $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
     | error
         {}
@@ -241,6 +241,15 @@
         {   $$ = append_Cases($1, single_Cases(branch($2, $4, $6))); }
     ;
 
+    let_list
+    : OBJECTID ':' TYPEID IN expr
+        {   $$ = let($1, $3, no_expr(), $5); }
+    | OBJECTID ':' TYPEID ASSIGN expr IN expr
+        {   $$ = let($1, $3, $5, $7); }
+    | OBJECTID ':' TYPEID ',' let_list
+        {   $$ = let($1, $3, no_expr(), $5); }
+    | OBJECTID ':' TYPEID ASSIGN expr ',' let_list
+        {   $$ = let($1, $3, $5, $7); }
 
     expr_plus
     : expr ';'      /* one expr */
@@ -267,10 +276,8 @@
     | '{' expr_plus '}'
         {   $$ = block($2); }
     /* to do */
-    | LET OBJECTID ':' TYPEID IN expr 
-        {   $$ = let($2, $4, no_expr(), $6); }
-    | LET OBJECTID ':' TYPEID ASSIGN expr IN expr 
-        {   $$ = let($2, $4, $6, $8); }
+    | LET let_list
+        {   $$ = $2; }
     | CASE expr OF case_list ESAC
         {   $$ = typcase($2, $4); }
     | NEW TYPEID
