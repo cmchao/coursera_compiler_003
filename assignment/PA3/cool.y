@@ -187,6 +187,7 @@
     | CLASS TYPEID INHERITS TYPEID '{' dummy_feature_list '}' ';'
         {   $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
     | error
+        {}
     ;
 
     formal
@@ -212,6 +213,7 @@
     | OBJECTID ':' TYPEID ASSIGN expr
         {   $$ = attr($1, $3, $5); }
     | error
+        {}
     ;
 
     feature_list
@@ -304,6 +306,7 @@
     | BOOL_CONST
         {   $$ = bool_const($1); }
     | error
+        {}
     ;
 
 
