@@ -91,6 +91,8 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
     class_table = new SymbolTable<Symbol, class__class>();
     class_table->enterscope();  //required since there is no scope when initialization
+    install_basic_classes();
+
     for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
         class__class *curclass = static_cast<class__class *>(classes->nth(idx));
         if (semant_debug) 
@@ -98,20 +100,12 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
         class_map.insert(std::make_pair(curclass->get_parent(), curclass->get_name()));
 
-        if (class_table->probe(curclass->get_name()) != NULL)
-            semant_error(curclass);
+        if (class_table->probe(curclass->get_name()) != NULL) {
+            semant_error(curclass, "duplicate");
+        }
 
         class_table->addid(curclass->get_name(), curclass);
-
-        //check language pre-defined redeclaration
-         if (curclass->get_name() == No_class
-                || curclass->get_name() == Object
-                || curclass->get_name() == IO
-                || curclass->get_name() == Int
-                || curclass->get_name() == Str)
-               semant_error(curclass);
     }
-
 }
 
 void ClassTable::install_basic_classes() {
@@ -148,6 +142,9 @@ void ClassTable::install_basic_classes() {
 			       single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))),
 	       filename);
 
+
+    class_map.insert(std::make_pair(No_class, Object));
+    class_table->addid(Object, static_cast<class__class *>(Object_class));
     // 
     // The IO class inherits from Object. Its methods are
     //        out_string(Str) : SELF_TYPE       writes a string to the output
@@ -169,6 +166,8 @@ void ClassTable::install_basic_classes() {
 			       single_Features(method(in_int, nil_Formals(), Int, no_expr()))),
 	       filename);  
 
+    class_map.insert(std::make_pair(Object, IO));
+    class_table->addid(IO, static_cast<class__class *>(IO_class));
     //
     // The Int class has no methods and only a single attribute, the
     // "val" for the integer. 
@@ -179,11 +178,16 @@ void ClassTable::install_basic_classes() {
 	       single_Features(attr(val, prim_slot, no_expr())),
 	       filename);
 
+    class_map.insert(std::make_pair(Object, Int));
+    class_table->addid(Int, static_cast<class__class *>(Int_class));
     //
     // Bool also has only the "val" slot.
     //
     Class_ Bool_class =
 	class_(Bool, Object, single_Features(attr(val, prim_slot, no_expr())),filename);
+
+    class_map.insert(std::make_pair(Object, Bool));
+    class_table->addid(Bool, static_cast<class__class *>(Bool_class));
 
     //
     // The class Str has a number of slots and operations:
@@ -213,6 +217,8 @@ void ClassTable::install_basic_classes() {
 						      Str, 
 						      no_expr()))),
 	       filename);
+    class_map.insert(std::make_pair(Object, Str));
+    class_table->addid(Str, static_cast<class__class *>(Str_class));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -239,6 +245,13 @@ ostream& ClassTable::semant_error(Symbol filename, tree_node *t)
 {
     error_stream << filename << ":" << t->get_line_number() << ": ";
     return semant_error();
+}
+
+ostream& ClassTable::semant_error(Class_ c, const char *msg)
+{
+    error_stream << c->get_filename() << ":" << c->get_name() << ", " << msg << endl;
+    semant_errors++;
+    return error_stream;
 }
 
 ostream& ClassTable::semant_error()                  

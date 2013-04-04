@@ -32,12 +32,12 @@ private:
   SymbolTable<Symbol, method_class> *method_table; //method scope
   SymbolTable<Symbol, Symbol>       *object_table; //object scope
 
-
 public:
   ClassTable(Classes);
   int errors() { return semant_errors; }
   ostream& semant_error();
   ostream& semant_error(Class_ c);
+  ostream& semant_error(Class_ c, const char *msg);
   ostream& semant_error(Symbol filename, tree_node *t);
 };
 
