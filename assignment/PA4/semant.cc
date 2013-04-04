@@ -106,6 +106,11 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
         class_table->addid(curclass->get_name(), curclass);
     }
+
+    check_inheritance();
+}
+
+void ClassTable::check_inheritance(void) {
 }
 
 void ClassTable::install_basic_classes() {

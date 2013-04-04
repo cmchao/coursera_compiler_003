@@ -26,6 +26,9 @@ private:
   void install_basic_classes();
   ostream& error_stream;
 
+  //extra method
+  void check_inheritance(void);
+
   //extra information
   std::multimap<Symbol, Symbol>     class_map; //keep parent information for each class
   SymbolTable<Symbol, class__class> *class_table;  //class scope
