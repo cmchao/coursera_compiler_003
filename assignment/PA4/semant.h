@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <iostream>  
+#include <map>
 #include "cool-tree.h"
 #include "stringtab.h"
 #include "symtab.h"
@@ -24,6 +25,13 @@ private:
   int semant_errors;
   void install_basic_classes();
   ostream& error_stream;
+
+  //extra information
+  std::multimap<Symbol, Symbol>     class_map; //keep parent information for each class
+  SymbolTable<Symbol, class__class> *class_table;  //class scope
+  SymbolTable<Symbol, method_class> *method_table; //method scope
+  SymbolTable<Symbol, Symbol>       *object_table; //object scope
+
 
 public:
   ClassTable(Classes);

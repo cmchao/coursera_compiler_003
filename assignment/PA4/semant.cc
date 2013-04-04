@@ -86,8 +86,30 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+    if (semant_debug) 
+        cerr << "# Classes: " << classes->len() << endl;
+
+    class_table = new SymbolTable<Symbol, class__class>();
+    class_table->enterscope();  //required since there is no scope when initialization
     for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
-        cout <<  classes->nth(idx)->get_name() << endl;
+        class__class *curclass = static_cast<class__class *>(classes->nth(idx));
+        if (semant_debug) 
+            curclass->dump(cerr, 0);
+
+        class_map.insert(std::make_pair(curclass->get_parent(), curclass->get_name()));
+
+        if (class_table->probe(curclass->get_name()) != NULL)
+            semant_error(curclass);
+
+        class_table->addid(curclass->get_name(), curclass);
+
+        //check language pre-defined redeclaration
+         if (curclass->get_name() == No_class
+                || curclass->get_name() == Object
+                || curclass->get_name() == IO
+                || curclass->get_name() == Int
+                || curclass->get_name() == Str)
+               semant_error(curclass);
     }
 
 }
