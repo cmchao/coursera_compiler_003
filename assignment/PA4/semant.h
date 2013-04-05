@@ -55,7 +55,7 @@ public:
 
   //extra function
   void collect_all_id();
-
+  SymbolTable<Symbol, class__class>* get_ctable() { return class_table; }
 };
 
 

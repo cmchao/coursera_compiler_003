@@ -386,13 +386,17 @@ void program_class::semant()
 
     /* ClassTable constructor may do some semantic analysis */
     ClassTable *classtable = new ClassTable(classes);
+    if (classtable->errors()) {
+        cerr << "Compilation halted due to static semantic errors." << endl;
+        exit(1);
+    }
 
     /* some semantic analysis code may go here */
     classtable->collect_all_id();
 
-    if (classtable->errors()) {
-	cerr << "Compilation halted due to static semantic errors." << endl;
-	exit(1);
+    if (this->typecheck(cerr, classtable->get_ctable()) > 0) {
+        cerr << "Compilation halted due to static semantic errors." << endl;
+        exit(1);
     }
 }
 

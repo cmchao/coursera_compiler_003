@@ -12,10 +12,18 @@
 #include "tree.h"
 #include "cool-tree.handcode.h"
 #include "symtab.h"
+#include <string>
 
 class class__class;
 class method_class;
 class formal_class;
+
+static std::string cur_class_filename;
+static void semant_error(ostream& error_stream, tree_node *t, char *msg)
+{
+  error_stream << cur_class_filename << ":" << t->get_line_number()
+               << ": " << msg << "\n";
+}
 
 // define the class for phylum
 // define simple phylum - Program
@@ -26,6 +34,7 @@ public:
    tree_node *copy()		 { return copy_Program(); }
    virtual Program copy_Program() = 0;
 
+   SymbolTable<Symbol, class__class> claz;
 #ifdef Program_EXTRAS
    Program_EXTRAS
 #endif
@@ -41,6 +50,7 @@ public:
    virtual Class_ copy_Class_() = 0;
    virtual Symbol get_parent(void) const = 0;
    virtual Symbol get_name(void) const = 0;
+   virtual method_class* get_method(Symbol) = 0;
 
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
@@ -172,12 +182,40 @@ typedef Cases_class *Cases;
 class program_class : public Program_class {
 protected:
    Classes classes;
+   int errors;
 public:
    program_class(Classes a1) {
       classes = a1;
+      errors = 0;
    }
    Program copy_Program();
    void dump(ostream& stream, int n);
+   int typecheck(ostream& stream, SymbolTable<Symbol, class__class>* ctable) {
+       claz = *ctable;
+       bool has_Main = false;
+       bool has_main_meth = false;
+       for(int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
+           Class__class *curclass = classes->nth(idx);
+
+           //check 'Main' Class
+           if (curclass->get_name() == idtable.lookup_string("Main")) {
+             cur_class_filename = curclass->get_filename()->get_string();
+             has_Main = true;
+             if (curclass->get_method(idtable.lookup_string("main")))
+               has_main_meth = true;
+           }
+       }
+
+       if (!has_Main) {
+          errors++;
+          stream << "Class Main is not defined." << endl;
+       } else if (!has_main_meth) {
+          errors++;
+          semant_error(stream, this, "No 'main' method in class Main.");
+       }
+
+       return errors;
+  }
 
 #ifdef Program_SHARED_EXTRAS
    Program_SHARED_EXTRAS
@@ -206,6 +244,7 @@ public:
    void dump(ostream& stream, int n);
    Symbol get_parent(void) const { return parent;};
    Symbol get_name(void) const { return name;};
+   method_class* get_method(Symbol func_name) {return funs.lookup(func_name);}
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable, 
              SymbolTable<Symbol, class__class>* ctable) {
