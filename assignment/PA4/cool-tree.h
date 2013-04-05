@@ -1501,6 +1501,24 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+
+       class__class* curtype = claz.lookup(type_name);
+       if (type_name == idtable.lookup_string("SELF_TYPE")) {
+           // self_type is special case
+           type = idtable.lookup_string("SELF_TYPE");
+       } else if (curtype == NULL) {
+           // type doesn't exist
+           err++;
+           std::ostringstream msg;
+           msg << "'new' used with undefined class " << type_name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+           
+           //ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+       } else {
+           type = curtype->get_name();
+       }
+
        return err;
    }
 
