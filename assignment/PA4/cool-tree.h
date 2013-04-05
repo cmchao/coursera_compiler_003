@@ -11,7 +11,11 @@
 
 #include "tree.h"
 #include "cool-tree.handcode.h"
+#include "symtab.h"
 
+class class__class;
+class method_class;
+class formal_class;
 
 // define the class for phylum
 // define simple phylum - Program
@@ -37,6 +41,10 @@ public:
    virtual Class_ copy_Class_() = 0;
    virtual Symbol get_parent(void) const = 0;
    virtual Symbol get_name(void) const = 0;
+
+   SymbolTable<Symbol, Symbol> objs;
+   SymbolTable<Symbol, method_class> funs;
+   SymbolTable<Symbol, class__class> claz;
        
 #ifdef Class__EXTRAS
    Class__EXTRAS
@@ -51,6 +59,14 @@ class Feature_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Feature(); }
    virtual Feature copy_Feature() = 0;
+   virtual Symbol get_name() = 0;
+   virtual void scan(SymbolTable<Symbol, Symbol>*, 
+                     SymbolTable<Symbol, method_class>*,
+                     SymbolTable<Symbol, class__class>*) = 0;
+
+   SymbolTable<Symbol, Symbol> objs;
+   SymbolTable<Symbol, method_class> funs;
+   SymbolTable<Symbol, class__class> claz;
 
 #ifdef Feature_EXTRAS
    Feature_EXTRAS
@@ -65,6 +81,14 @@ class Formal_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Formal(); }
    virtual Formal copy_Formal() = 0;
+   virtual Symbol get_name() = 0;
+   virtual void scan(SymbolTable<Symbol, Symbol>*, 
+                    SymbolTable<Symbol, method_class>*,
+                    SymbolTable<Symbol, class__class>*) = 0;
+
+   SymbolTable<Symbol, Symbol> objs;
+   SymbolTable<Symbol, method_class> funs;
+   SymbolTable<Symbol, class__class> claz;
 
 #ifdef Formal_EXTRAS
    Formal_EXTRAS
@@ -79,6 +103,13 @@ class Expression_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Expression(); }
    virtual Expression copy_Expression() = 0;
+   virtual void scan(SymbolTable<Symbol, Symbol>*, 
+                     SymbolTable<Symbol, method_class>*,
+                     SymbolTable<Symbol, class__class>*) = 0;
+
+   SymbolTable<Symbol, Symbol> objs;
+   SymbolTable<Symbol, method_class> funs;
+   SymbolTable<Symbol, class__class> claz;
 
 #ifdef Expression_EXTRAS
    Expression_EXTRAS
@@ -93,6 +124,14 @@ class Case_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Case(); }
    virtual Case copy_Case() = 0;
+   virtual Symbol get_name() = 0;
+   virtual void scan(SymbolTable<Symbol, Symbol>*, 
+                     SymbolTable<Symbol, method_class>*,
+                     SymbolTable<Symbol, class__class>*) = 0;
+
+   SymbolTable<Symbol, Symbol> objs;
+   SymbolTable<Symbol, method_class> funs;
+   SymbolTable<Symbol, class__class> claz;
 
 #ifdef Case_EXTRAS
    Case_EXTRAS
@@ -190,7 +229,23 @@ public:
       expr = a4;
    }
    Feature copy_Feature();
+   Symbol get_name() { return name; }
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+            SymbolTable<Symbol, method_class>* ftable,
+            SymbolTable<Symbol, class__class>* ctable) {
+       otable->enterscope();
+       for (int i = formals->first(); formals->more(i); 
+           i = formals->next(i)) {
+           formals->nth(i)->scan(otable, ftable, ctable);
+       }
+
+       expr->scan(otable, ftable, ctable);
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+       otable->exitscope();
+  }
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -215,6 +270,18 @@ public:
    }
    Feature copy_Feature();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+               SymbolTable<Symbol, method_class>* ftable,
+               SymbolTable<Symbol, class__class>* ctable) {
+       if (init) {
+           init->scan(otable, ftable, ctable);
+       }
+
+       objs = *otable;
+       funs = *ftable; 
+       claz = *ctable;
+   }
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -237,6 +304,16 @@ public:
    }
    Formal copy_Formal();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       otable->addid(name, &type_decl);
+
+       objs = *otable;
+       funs = *ftable; 
+       claz = *ctable;
+   }
 
 #ifdef Formal_SHARED_EXTRAS
    Formal_SHARED_EXTRAS
@@ -261,6 +338,20 @@ public:
    }
    Case copy_Case();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+      otable->enterscope();
+
+      otable->addid(name, &type_decl);
+      expr->scan(otable, ftable, ctable);
+
+      objs = *otable;
+      funs = *ftable;
+      claz = *ctable;
+      otable->exitscope();
+   }
 
 #ifdef Case_SHARED_EXTRAS
    Case_SHARED_EXTRAS
@@ -283,6 +374,15 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       expr->scan(otable, ftable, ctable);
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -306,6 +406,19 @@ public:
       type_name = a2;
       name = a3;
       actual = a4;
+   }
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       for(int i = actual->first(); actual->more(i); i = actual->next(i)) {
+           actual->nth(i)->scan(otable, ftable, ctable);
+       }
+
+       expr->scan(otable, ftable, ctable);
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
@@ -333,6 +446,19 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       for(int i = actual->first(); actual->more(i); i = actual->next(i)) {
+           actual->nth(i)->scan(otable, ftable, ctable);
+       }
+
+       expr->scan(otable, ftable, ctable);
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -357,6 +483,11 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+       SymbolTable<Symbol, method_class>* ftable,
+       SymbolTable<Symbol, class__class>* ctable ) {
+       return;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -379,6 +510,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       pred->scan(otable, ftable, ctable);
+       body->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -401,6 +542,17 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       expr->scan(otable, ftable, ctable);
+       for(int i = cases->first(); cases->more(i); i = cases->next(i)) {
+           cases->nth(i)->scan(otable, ftable, ctable);
+       }
+       objs = *otable;
+       funs = *ftable; 
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -421,6 +573,17 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       for(int i = body->first(); body->more(i); i = body->next(i)) {
+           body->nth(i)->scan(otable, ftable, ctable);
+       }
+
+       objs = *otable;
+       funs = *ftable; 
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -447,6 +610,20 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable, 
+             SymbolTable<Symbol, class__class>* ctable) {
+       otable->enterscope();
+
+       otable->addid(identifier, &type_decl);
+       init->scan(otable, ftable, ctable);
+       body->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable; 
+       claz = *ctable;
+       otable->exitscope();
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -469,6 +646,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -491,6 +678,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -513,6 +710,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -535,6 +742,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -555,6 +772,15 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -577,6 +803,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -599,6 +835,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -621,6 +867,16 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+       e2->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -641,6 +897,15 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -661,6 +926,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -681,6 +953,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -701,6 +980,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -721,6 +1007,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -741,6 +1034,15 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       e1->scan(otable, ftable, ctable);
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -759,6 +1061,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -779,6 +1088,15 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable,
+             SymbolTable<Symbol, class__class>* ctable) {
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
+
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
