@@ -708,6 +708,74 @@ public:
 
        err += expr->typecheck(stream);
 
+       class__class* curclass = expr->isselftype()
+         ? claz.lookup(idtable.lookup_string((char*)(cur_classname.c_str()))) : claz.lookup(expr->type);
+
+       if (curclass == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Dispatch on undefined class " << expr->type << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+
+           // ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+
+           return err;
+       }
+
+       // check if expr conforms to type_name
+       if (!expr->conform(type_name)) {
+           err++;
+           std::ostringstream msg;
+           msg << "Expression type " << expr->type << " does not conform "
+               << "to declared static dispatch type " << type_name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+
+           // ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+           return err;
+       }
+    
+       // check if method exists
+       method_class* curmethod = curclass->get_method(name);
+       if (curmethod == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Dispatch to undefined method " << name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+
+           // ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+           return err;
+       }
+
+       // check if function signature match
+       Formals formals = curmethod->get_formals();
+       if (actual->len() != formals->len()) {
+           err++;
+           std::ostringstream msg;
+           msg << "Method " << name << " called with wrong number of arguments.";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       } else {
+           for(int i = actual->first(), j = formals->first();
+               actual->more(i);
+               i = actual->next(i), j = formals->next(j)) {
+               if (!actual->nth(i)->conform(formals->nth(j)->get_type())) {
+                 err++;
+                 std::ostringstream msg;
+                 msg << "In call of method " << name << ", type " << actual->nth(i)->type
+                     << " of parameter " << formals->nth(j)->get_name() << " does not conform"
+                     << " to declared type " << formals->nth(j)->get_type() << ".";
+                 semant_error(stream, this, (char *)(msg.str().c_str()));
+               }
+           }
+       }
+        
+       if (curmethod->get_return() == idtable.lookup_string("SELF_TYPE"))
+         type = expr->type;
+       else
+         type = curmethod->get_return();
+
        return err;
    }
 
@@ -755,6 +823,57 @@ public:
 
        err += expr->typecheck(stream);
 
+       class__class* curclass = expr->isselftype()
+         ? claz.lookup(idtable.lookup_string((char*)(cur_classname.c_str()))) : claz.lookup(expr->type);
+
+       if (curclass == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Dispatch on undefined class " << expr->type << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+
+           // ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+           return err;
+       }
+
+       // check if method exists
+       method_class* curmethod = curclass->get_method(name);
+       if (curmethod == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Dispatch to undefined method " << name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+
+           // ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+           return err;
+       }
+
+       // check if function signature match
+       Formals formals = curmethod->get_formals();
+       if (actual->len() != formals->len()) {
+           err++;
+           std::ostringstream msg;
+           msg << "Method " << name << " called with wrong number of arguments.";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       } else
+           for(int i = actual->first(), j = formals->first();
+               actual->more(i);
+               i = actual->next(i), j = formals->next(j))
+               if (!actual->nth(i)->conform(formals->nth(j)->get_type())) {
+                 err++;
+                 std::ostringstream msg;
+                 msg << "In call of method " << name << ", type " << actual->nth(i)->type
+                     << " of parameter " << formals->nth(j)->get_name() << " does not conform"
+                     << " to declared type " << formals->nth(j)->get_type() << ".";
+                 semant_error(stream, this, (char *)(msg.str().c_str()));
+               }
+
+       if (curmethod->get_return() == idtable.lookup_string("SELF_TYPE"))
+           type = expr->type;
+       else
+           type = curmethod->get_return();
 
        return err;
    }
