@@ -1,5 +1,6 @@
 
 
+#include <string>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -86,8 +87,9 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
-    if (semant_debug) 
+    if (semant_debug) {
         cerr << "# Classes: " << classes->len() << endl;
+    }
 
     class_table = new SymbolTable<Symbol, class__class>();
     class_table->enterscope();  //required since there is no scope when initialization
@@ -95,8 +97,9 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
     for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
         class__class *curclass = static_cast<class__class *>(classes->nth(idx));
-        if (semant_debug) 
+        if (semant_debug) {
             curclass->dump(cerr, 0);
+        }
 
         class_map.insert(std::make_pair(curclass->get_parent(), curclass->get_name()));
 
@@ -107,10 +110,44 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
         class_table->addid(curclass->get_name(), curclass);
     }
 
-    check_inheritance();
+    //check parent is defined or not
+    for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
+        class__class *curclass = static_cast<class__class *>(classes->nth(idx));
+
+        if (class_table->probe(curclass->get_parent()) == NULL) {
+            semant_error(curclass, "undefined inheritance");
+        }
+
+        if (check_cyclic(curclass->get_name(), curclass->get_name())) {
+            semant_error(curclass, "cyclic");
+        }
+    }
 }
 
-void ClassTable::check_inheritance(void) {
+bool ClassTable::check_cyclic(Symbol target, Symbol child)  {
+    std::pair<std::multimap<Symbol, Symbol>::iterator,
+              std::multimap<Symbol, Symbol>::iterator> nodes = class_map.equal_range(child);
+
+    std::multimap<Symbol, Symbol>::iterator iter;
+
+    if (nodes.first == class_map.end()) {
+        return false;
+    }
+
+    bool status = false;
+    bool cur;
+    for (iter = nodes.first;  iter != nodes.second; ++iter) {
+        if (iter->second == target)
+            cur = true;
+        else
+            cur = check_cyclic(target, iter->second);
+
+        status = status || cur;
+        if (status)
+            return true;
+    }
+
+    return false;
 }
 
 void ClassTable::install_basic_classes() {

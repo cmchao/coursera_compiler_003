@@ -27,7 +27,7 @@ private:
   ostream& error_stream;
 
   //extra method
-  void check_inheritance(void);
+  bool check_cyclic(Symbol, Symbol);
 
   //extra information
   std::multimap<Symbol, Symbol>     class_map; //keep parent information for each class
