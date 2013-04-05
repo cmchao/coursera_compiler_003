@@ -837,6 +837,14 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += pred->typecheck(stream) + body->typecheck(stream);
+       //check if pred has type bool
+       if (pred->type != idtable.lookup_string("Bool")) {
+         err++;
+         semant_error(stream, this, "Loop condition does not have type Bool.");
+       }
+
+       type = idtable.lookup_string("Object");
        return err;
    }
 
