@@ -1598,7 +1598,20 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
-       type = *(objs.lookup(name));
+
+       if (name == idtable.lookup_string("self")) {
+           type = idtable.lookup_string("SELF_TYPE");
+       } else if (objs.lookup(name) == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Undeclared identifier " << name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+           //ERROR RECOVERY
+           type = idtable.lookup_string("_no_type");
+       } else {
+           type = *(objs.lookup(name));
+       }
+
        return err;
    }
 
