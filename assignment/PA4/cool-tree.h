@@ -165,36 +165,32 @@ public:
        return NULL;     
    }
 
-   bool conform(Symbol atype) {
+   bool conform(Symbol curtype) {
        // "_no_type" conforms to any type
        if (type == idtable.lookup_string("_no_type"))
            return true;
        // no type conforms to "_no_type" except itself
-       if (atype == idtable.lookup_string("_no_type"))
+       if (curtype == idtable.lookup_string("_no_type"))
            return false;
        //SELF_TYPE_C <= SELF_TYPE_C
        if (type == idtable.lookup_string("SELF_TYPE")
-           && atype == idtable.lookup_string("SELF_TYPE"))
+           && curtype == idtable.lookup_string("SELF_TYPE"))
            return true;
        // T <= SELF_TYPE_C always false
-       if (atype == idtable.lookup_string("SELF_TYPE"))
+       if (curtype == idtable.lookup_string("SELF_TYPE"))
            return false;
 
-       return atype == lub(type, atype);
+       return curtype == lub(type, curtype);
    }
 
    bool isbasictype() {
-     if (type == idtable.lookup_string("Int")
-         || type == idtable.lookup_string("Bool")
-         || type == idtable.lookup_string("String"))
-       return true;
-     return false;
+       return (type == idtable.lookup_string("Int")
+                || type == idtable.lookup_string("Bool")
+                || type == idtable.lookup_string("String"));
    }
 
    bool isselftype() {
-     if (type == idtable.lookup_string("SELF_TYPE")) 
-       return true;
-     return false;
+       return (type == idtable.lookup_string("SELF_TYPE"));
    }
 
 #ifdef Expression_EXTRAS
@@ -383,6 +379,8 @@ public:
    Symbol get_name() { return name; }
    Symbol* get_type_addr() { return NULL; }
    bool is_method() {return true;}
+   Formals get_formals() { return formals; }
+   Symbol get_return() {return return_type; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
             SymbolTable<Symbol, method_class>* ftable,
             SymbolTable<Symbol, class__class>* ctable) {
@@ -408,41 +406,6 @@ public:
 
       err += expr->typecheck(stream);
 
-#if 0
-      //check the signature is consistent with ancestors
-      SymbolTable<Symbol, method_class> funcopy = funs;
-      funcopy.exitscope();
-      method_class *lastfun = (funcopy.lookup(name));
-      
-      if (lastfun) {
-          if (formals->len() != lastfun->formals->len()) {
-            err++;
-            std::ostringstream msg;
-            msg << "Incompatible number of formal parameters in redefined method " << name << ".";
-            semant_error(stream, this, (char *)(msg.str().c_str()));
-          } else {
-              for(int i = formals->first(), j = lastfun->formals->first();
-                  formals->more(i);
-                  i = formals->next(i), j = lastfun->formals->next(j)) {
-                  if (!formals->nth(i)->equals((formal_class *)(lastfun->formals->nth(j)))) {
-                      err++;
-                      std::ostringstream msg;
-                      msg << "In redefined method " << name << ", paramater type "
-                          << formals->nth(i)->get_type() << " is different from "
-                          << "original type " << lastfun->formals->nth(j)->get_type() << ".";
-                      semant_error(stream, this, (char *)(msg.str().c_str()));
-                  }
-              }
-          }
-          if (lastfun->return_type != return_type) {
-            err++;
-            std::ostringstream msg;
-            msg << "In redefined method " << name << ", return type " << return_type
-                << " is different from original return type " << lastfun->return_type << ".";
-            semant_error(stream, this, (char *)(msg.str().c_str()));
-          }
-      }
-#endif
 
       //need to check if type exists
       if (claz.lookup(return_type) == NULL && return_type != idtable.lookup_string("SELF_TYPE")) {
@@ -451,16 +414,6 @@ public:
           msg << "Undefined return type " << return_type << " in method " << name << ".";
           semant_error(stream, this, (char *)(msg.str().c_str()));
       } 
-#if 0
-      else if (!expr->conform(return_type)) {
-        //check if return type match
-          err++;
-          std::ostringstream msg;
-          msg << "Inferred return type " << expr->type << " of method " << name
-              << " does not conform to declared return type " << return_type << ".";
-          semant_error(stream, this, (char *)(msg.str().c_str()));
-      }
-#endif
 
       return err;
   }
@@ -524,21 +477,21 @@ public:
        // check if type exist
        class__class *decl = claz.lookup(type_decl);
        if (decl == NULL && type_decl != idtable.lookup_string("SELF_TYPE")) {
-         err++;
-         std::ostringstream msg;
-         msg << "Class " << type_decl << " of attribute " << name << " is undefined.";
-         semant_error(stream, this, (char *)(msg.str().c_str()));
-       }
-       if (init) {
-         err += init->typecheck(stream);
-         // check if init conform to type_decl
-         if (!init->conform(type_decl)) {
            err++;
            std::ostringstream msg;
-           msg << "Inferred type " << init->type << " of initialization of attribute "
-               << name << " does not conform to declared type " << type_decl << ".";
+           msg << "Class " << type_decl << " of attribute " << name << " is undefined.";
            semant_error(stream, this, (char *)(msg.str().c_str()));
-         }
+       }
+       if (init) {
+           err += init->typecheck(stream);
+           // check if init conform to type_decl
+           if (!init->conform(type_decl)) {
+               err++;
+               std::ostringstream msg;
+               msg << "Inferred type " << init->type << " of initialization of attribute "
+                   << name << " does not conform to declared type " << type_decl << ".";
+               semant_error(stream, this, (char *)(msg.str().c_str()));
+           }
        }
         
        return err;
@@ -639,7 +592,14 @@ public:
       otable->exitscope();
    }
    int typecheck(ostream& stream) {
-       int err = 0;
+       int err = expr->typecheck(stream);
+        
+       if (claz.lookup(type_decl) == NULL) {
+         err++;
+         std::ostringstream msg;
+         msg << "Class " << type_decl << " of case branch is undefined.";
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
        return err;
    }
 
@@ -676,6 +636,25 @@ public:
 
    int typecheck(ostream& stream) {
        int err = 0;
+       err += expr->typecheck(stream);
+
+       // check if name exist
+       Symbol* curtype = objs.lookup(name);
+       if (curtype == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Assignment to undeclared variable " << name << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       } else if (!expr->conform(*curtype)) {
+           // check if expr conforms to static type of assigned object
+           err++;
+           std::ostringstream msg;
+           msg << "Type " << expr->type << " of assigned expression does not conform"
+             << " to declared type " << *curtype << " of identifier " << name << ".";
+          semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+        
+       type = expr->type;
        return err;
    }
 #ifdef Expression_SHARED_EXTRAS
@@ -707,8 +686,8 @@ public:
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable,
              SymbolTable<Symbol, class__class>* ctable) {
-       for(int i = actual->first(); actual->more(i); i = actual->next(i)) {
-           actual->nth(i)->scan(otable, ftable, ctable);
+       for(int idx = actual->first(); actual->more(idx); idx = actual->next(idx)) {
+           actual->nth(idx)->scan(otable, ftable, ctable);
        }
 
        expr->scan(otable, ftable, ctable);
@@ -719,6 +698,12 @@ public:
 
    int typecheck(ostream& stream) {
        int err = 0;
+       // figure out the class of expr
+       for(int idx = actual->first(); actual->more(idx); idx = actual->next(idx))
+           err += actual->nth(idx)->typecheck(stream);
+
+       err += expr->typecheck(stream);
+
        return err;
    }
 
@@ -760,6 +745,13 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       // figure out the class of expr
+       for(int i = actual->first(); actual->more(i); i = actual->next(i))
+           err += actual->nth(i)->typecheck(stream);
+
+       err += expr->typecheck(stream);
+
+
        return err;
    }
 
@@ -793,6 +785,18 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       
+       err += pred->typecheck(stream)
+          + then_exp->typecheck(stream) + else_exp->typecheck(stream);
+
+       //pred must be bool
+       if (pred->type != idtable.lookup_string("Bool")) {
+           err++;
+           semant_error(stream, this, "Predicate of 'if' does not have type Bool.");
+       }
+
+       type = lub(then_exp->type, else_exp->type);
+
        return err;
    }
 
@@ -866,6 +870,8 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += expr->typecheck(stream);
+       type = idtable.lookup_string("_no_type");
        return err;
    }
 
@@ -901,6 +907,10 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       for (int i = body->first(); body->more(i); i = body->next(i)) {
+           err += body->nth(i)->typecheck(stream);
+           type = body->nth(i)->type;
+       }
        return err;
    }
 
@@ -945,6 +955,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += init->typecheck(stream) + body->typecheck(stream);
        return err;
    }
 
@@ -981,6 +992,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " + " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Int
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1017,6 +1039,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " - " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Int
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1053,6 +1086,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " * " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Int
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1089,6 +1133,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " / " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Int
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1133,9 +1188,8 @@ public:
          semant_error(stream, this, (char *)(msg.str().c_str()));
        }
 
-       //type = Bool
-       type = idtable.lookup_string("Bool");
-
+       //type = Int
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1172,6 +1226,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " < " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Int
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1208,6 +1273,16 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->isbasictype() || e2->isbasictype()) {
+           if (e1->type != e2->type) {
+               err++;
+               semant_error(stream, this, "Illegal comparison with a basic type");
+           }
+       }
+       //type = Bool
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1244,6 +1319,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream) + e2->typecheck(stream);
+       // e1, e2 are Int
+       if (e1->type != idtable.lookup_string("Int")
+           || e2->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "non-Int arguments: " << e1->type << " <= " << e2->type;
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Bool
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1277,6 +1363,17 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+
+       err += e1->typecheck(stream);
+       //e1 is bool
+       if (e1->type != idtable.lookup_string("Bool")) {
+         err++;
+         std::ostringstream msg;
+         msg << "Argument of 'not' has type " << e1->type << " instead of Bool.";
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       //type = Bool
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1308,6 +1405,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       type = idtable.lookup_string("Int");
        return err;
    }
 
@@ -1339,6 +1437,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1370,6 +1469,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       type = idtable.lookup_string("String");
        return err;
    }
 
@@ -1434,6 +1534,8 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       err += e1->typecheck(stream);
+       type = idtable.lookup_string("Bool");
        return err;
    }
 
@@ -1463,6 +1565,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       type = idtable.lookup_string("_no_type");
        return err;
    }
 
@@ -1495,6 +1598,7 @@ public:
    }
    int typecheck(ostream& stream) {
        int err = 0;
+       type = *(objs.lookup(name));
        return err;
    }
 
