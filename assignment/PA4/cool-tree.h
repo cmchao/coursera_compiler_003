@@ -956,6 +956,33 @@ public:
    int typecheck(ostream& stream) {
        int err = 0;
        err += init->typecheck(stream) + body->typecheck(stream);
+
+       // check if id is self
+       if (identifier == idtable.lookup_string("self")) {
+           err++;
+           semant_error(stream, this, "'self' cannot be bound in a 'let' expression.");
+       }
+
+       // check if type exist
+       if (claz.lookup(type_decl) == NULL && type_decl != idtable.lookup_string("SELF_TYPE")) {
+           err++;
+           std::ostringstream msg;
+           msg << "Class " << type_decl << " of let-bound identifier "
+               << identifier << " is undefined.";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+
+       // check if init conforms to type_decl
+       if (!init->conform(type_decl)) {
+           err++;
+           std::ostringstream msg;
+           msg << "Inferred type " << init->type << " of initialization of " << identifier
+               << " does not conform to identifier's declared type " << type_decl << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+
+       // type = body
+       type = body->type;
        return err;
    }
 
@@ -1274,7 +1301,7 @@ public:
    int typecheck(ostream& stream) {
        int err = 0;
        err += e1->typecheck(stream) + e2->typecheck(stream);
-       // e1, e2 are Int
+       //if e1 is int, bool, string, e2 must be of same type
        if (e1->isbasictype() || e2->isbasictype()) {
            if (e1->type != e2->type) {
                err++;
