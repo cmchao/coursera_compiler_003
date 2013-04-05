@@ -209,17 +209,17 @@ public:
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable, 
              SymbolTable<Symbol, class__class>* ctable) {
-       //first collect all the names in this class, coz they need to be visible to each other
-       for(int i = features->first(); features->more(i); i = features->next(i)) {
-           Feature_class* curfea = (Feature_class*)features->nth(i);
+       //get all method information first
+       for(int idx = features->first(); features->more(idx); idx = features->next(idx)) {
+           Feature_class* curfea = (Feature_class*)features->nth(idx);
            if (curfea->is_method())
                ftable->addid(curfea->get_name(), (method_class *)curfea);
            else 
                otable->addid(curfea->get_name(), curfea->get_type_addr());
        }
 
-       for(int i = features->first(); features->more(i); i = features->next(i))  {
-           features->nth(i)->scan(otable, ftable, ctable);
+       for(int idx = features->first(); features->more(idx); idx = features->next(idx))  {
+           features->nth(idx)->scan(otable, ftable, ctable);
        }
 
        objs = *otable;
@@ -259,9 +259,9 @@ public:
             SymbolTable<Symbol, method_class>* ftable,
             SymbolTable<Symbol, class__class>* ctable) {
        otable->enterscope();
-       for (int i = formals->first(); formals->more(i); 
-           i = formals->next(i)) {
-           formals->nth(i)->scan(otable, ftable, ctable);
+       for (int idx = formals->first(); formals->more(idx); 
+           idx = formals->next(idx)) {
+           formals->nth(idx)->scan(otable, ftable, ctable);
        }
 
        expr->scan(otable, ftable, ctable);
