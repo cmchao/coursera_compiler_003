@@ -334,7 +334,38 @@ ostream& ClassTable::semant_error()
     return error_stream;
 } 
 
+void ClassTable::traverse_ast(Symbol symbol) {
+    method_table->enterscope();
+    object_table->enterscope();
+    class__class *curclass = class_table->lookup(symbol);
 
+    curclass->scan(object_table, method_table, class_table);
+
+    std::pair<std::multimap<Symbol, Symbol>::iterator,
+              std::multimap<Symbol, Symbol>::iterator>
+        range = class_map.equal_range(symbol);
+
+    for (std::multimap<Symbol, Symbol>::iterator it = range.first;
+         it != range.second; ++it) {
+        traverse_ast((*it).second);
+    }
+
+    if (semant_debug) {
+        cerr << "For class " << curclass->get_name()->get_string();
+        object_table->dump();
+        method_table->dump();
+    }
+
+    object_table->exitscope();
+    method_table->exitscope();
+}
+
+//collect id for methods and objects
+void ClassTable::collect_all_id() {
+    method_table = new SymbolTable<Symbol, method_class>();
+    object_table = new SymbolTable<Symbol, Symbol>();
+    traverse_ast(Object);
+}
 
 /*   This is the entry point to the semantic checker.
 
@@ -357,6 +388,7 @@ void program_class::semant()
     ClassTable *classtable = new ClassTable(classes);
 
     /* some semantic analysis code may go here */
+    classtable->collect_all_id();
 
     if (classtable->errors()) {
 	cerr << "Compilation halted due to static semantic errors." << endl;

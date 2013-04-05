@@ -36,6 +36,7 @@ private:
 
   //extra method
   bool check_cyclic(Symbol, Symbol);
+  void traverse_ast(Symbol symbol);
 
   //extra information
   std::multimap<Symbol, Symbol>     class_map; //keep parent information for each class
@@ -51,6 +52,10 @@ public:
   ostream& semant_error(Class_ c, const char *msg);
   ostream& semant_error(Class_, MSG_TYPE);
   ostream& semant_error(Symbol filename, tree_node *t);
+
+  //extra function
+  void collect_all_id();
+
 };
 
 

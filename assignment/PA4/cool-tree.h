@@ -60,6 +60,8 @@ public:
    tree_node *copy()		 { return copy_Feature(); }
    virtual Feature copy_Feature() = 0;
    virtual Symbol get_name() = 0;
+   virtual Boolean is_method() = 0;
+   virtual Symbol* get_type_addr() = 0;
    virtual void scan(SymbolTable<Symbol, Symbol>*, 
                      SymbolTable<Symbol, method_class>*,
                      SymbolTable<Symbol, class__class>*) = 0;
@@ -204,6 +206,26 @@ public:
    void dump(ostream& stream, int n);
    Symbol get_parent(void) const { return parent;};
    Symbol get_name(void) const { return name;};
+   void scan(SymbolTable<Symbol, Symbol>* otable,
+             SymbolTable<Symbol, method_class>* ftable, 
+             SymbolTable<Symbol, class__class>* ctable) {
+       //first collect all the names in this class, coz they need to be visible to each other
+       for(int i = features->first(); features->more(i); i = features->next(i)) {
+           Feature_class* curfea = (Feature_class*)features->nth(i);
+           if (curfea->is_method())
+               ftable->addid(curfea->get_name(), (method_class *)curfea);
+           else 
+               otable->addid(curfea->get_name(), curfea->get_type_addr());
+       }
+
+       for(int i = features->first(); features->more(i); i = features->next(i))  {
+           features->nth(i)->scan(otable, ftable, ctable);
+       }
+
+       objs = *otable;
+       funs = *ftable;
+       claz = *ctable;
+   }
 
 #ifdef Class__SHARED_EXTRAS
    Class__SHARED_EXTRAS
@@ -229,8 +251,10 @@ public:
       expr = a4;
    }
    Feature copy_Feature();
-   Symbol get_name() { return name; }
    void dump(ostream& stream, int n);
+   Symbol get_name() { return name; }
+   Symbol* get_type_addr() { return NULL; }
+   Boolean is_method() {return true;}
    void scan(SymbolTable<Symbol, Symbol>* otable,
             SymbolTable<Symbol, method_class>* ftable,
             SymbolTable<Symbol, class__class>* ctable) {
@@ -270,6 +294,8 @@ public:
    }
    Feature copy_Feature();
    void dump(ostream& stream, int n);
+   Boolean is_method() { return false; }
+   Symbol* get_type_addr() { return &type_decl; }
    Symbol get_name() { return name; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
                SymbolTable<Symbol, method_class>* ftable,
