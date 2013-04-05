@@ -20,11 +20,19 @@ typedef ClassTable *ClassTableP;
 // you like: it is only here to provide a container for the supplied
 // methods.
 
+
 class ClassTable {
 private:
   int semant_errors;
   void install_basic_classes();
   ostream& error_stream;
+
+  enum MSG_TYPE {
+      MSG_DUPLICATE,
+      MSG_BASE_REDEFINE,
+      MSG_UNDEF_INHERIT,
+      MSG_CYCLE,
+  };
 
   //extra method
   bool check_cyclic(Symbol, Symbol);
@@ -41,6 +49,7 @@ public:
   ostream& semant_error();
   ostream& semant_error(Class_ c);
   ostream& semant_error(Class_ c, const char *msg);
+  ostream& semant_error(Class_, MSG_TYPE);
   ostream& semant_error(Symbol filename, tree_node *t);
 };
 

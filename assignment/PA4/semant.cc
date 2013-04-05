@@ -93,7 +93,6 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
     class_table = new SymbolTable<Symbol, class__class>();
     class_table->enterscope();  //required since there is no scope when initialization
-    install_basic_classes();
 
     for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
         class__class *curclass = static_cast<class__class *>(classes->nth(idx));
@@ -104,22 +103,32 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
         class_map.insert(std::make_pair(curclass->get_parent(), curclass->get_name()));
 
         if (class_table->probe(curclass->get_name()) != NULL) {
-            semant_error(curclass, "duplicate");
+            semant_error(curclass, MSG_DUPLICATE);
+        }
+
+        if (curclass->get_name() == No_class
+            || curclass->get_name() == Object
+            || curclass->get_name() == IO
+            || curclass->get_name() == Int
+            || curclass->get_name() == Str) {
+            semant_error(curclass, MSG_BASE_REDEFINE);
         }
 
         class_table->addid(curclass->get_name(), curclass);
     }
+
+    install_basic_classes();
 
     //check parent is defined or not
     for (int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
         class__class *curclass = static_cast<class__class *>(classes->nth(idx));
 
         if (class_table->probe(curclass->get_parent()) == NULL) {
-            semant_error(curclass, "undefined inheritance");
+            semant_error(curclass, MSG_UNDEF_INHERIT);
         }
 
         if (check_cyclic(curclass->get_name(), curclass->get_name())) {
-            semant_error(curclass, "cyclic");
+            semant_error(curclass, MSG_CYCLE);
         }
     }
 }
@@ -292,6 +301,29 @@ ostream& ClassTable::semant_error(Symbol filename, tree_node *t)
 ostream& ClassTable::semant_error(Class_ c, const char *msg)
 {
     error_stream << c->get_filename() << ":" << c->get_name() << ", " << msg << endl;
+    semant_errors++;
+    return error_stream;
+}
+
+ostream& ClassTable::semant_error(Class_ c, MSG_TYPE msg_type)
+{
+    error_stream << c->get_filename() << ":" << c->get_line_number() << ":";
+    switch(msg_type) {
+    case MSG_DUPLICATE:
+        error_stream << " Class " << c->get_name() << " was previously defined." << endl;
+        break;
+    case MSG_BASE_REDEFINE:
+        error_stream << " Redefinition of basic class " << c->get_name() << "." << endl;
+        break;
+    case MSG_UNDEF_INHERIT:
+        error_stream << " Class " << c->get_name() 
+                     << " inherits from an undefined class " << c->get_parent() << "." << endl;
+        break;
+    case MSG_CYCLE:
+        error_stream << " cycle " << c->get_name() << endl;
+        break;
+    }
+
     semant_errors++;
     return error_stream;
 }
