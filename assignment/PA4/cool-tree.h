@@ -207,6 +207,8 @@ public:
    tree_node *copy()		 { return copy_Case(); }
    virtual Case copy_Case() = 0;
    virtual Symbol get_name() = 0;
+   virtual Symbol get_type() = 0;
+   virtual Symbol get_returntype() = 0;
    virtual void scan(SymbolTable<Symbol, Symbol>*, 
                      SymbolTable<Symbol, method_class>*,
                      SymbolTable<Symbol, class__class>*) = 0;
@@ -578,6 +580,8 @@ public:
    Case copy_Case();
    void dump(ostream& stream, int n);
    Symbol get_name() { return name; }
+   Symbol get_type() { return type_decl; }
+   Symbol get_returntype() { return expr->type; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable,
              SymbolTable<Symbol, class__class>* ctable) {
@@ -868,10 +872,39 @@ public:
        funs = *ftable; 
        claz = *ctable;
    }
+
    int typecheck(ostream& stream) {
        int err = 0;
        err += expr->typecheck(stream);
        type = idtable.lookup_string("_no_type");
+
+       for(int idx = cases->first(); cases->more(idx); idx = cases->next(idx)) {
+           if (cases->nth(idx)->get_type() == idtable.lookup_string("SELF_TYPE")) {
+               err++;
+               std::ostringstream msg;
+               msg << "Identifier " << cases->nth(idx)->get_name()
+                   << " declared with type SELF_TYPE in case branch.";
+               semant_error(stream, this, (char *)(msg.str().c_str()));
+           } else {
+               err += cases->nth(idx)->typecheck(stream);
+               if (type == idtable.lookup_string("_no_type"))
+                   type = cases->nth(idx)->get_returntype();
+               else
+                   type = lub(type, cases->nth(idx)->get_returntype());
+           }
+       }
+
+       for(int idx = cases->first(); cases->more(idx); idx = cases->next(idx))  {
+           for(int sidx = cases->next(idx); cases->more(sidx); sidx = cases->next(sidx)) {
+               if(cases->nth(idx)->get_type() == cases->nth(sidx)->get_type()) {
+                   err++;
+                   std::ostringstream msg;
+                   msg << "Duplicate branch " << cases->nth(idx)->get_type() << " in case statement.";
+                   semant_error(stream, this, (char *)(msg.str().c_str()));
+               }
+           }
+       }
+
        return err;
    }
 
