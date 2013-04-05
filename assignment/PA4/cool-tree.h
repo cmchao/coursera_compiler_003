@@ -13,11 +13,14 @@
 #include "cool-tree.handcode.h"
 #include "symtab.h"
 #include <string>
+#include <sstream>
+#include <set>
 
 class class__class;
 class method_class;
 class formal_class;
 
+static std::string cur_classname;
 static std::string cur_class_filename;
 static void semant_error(ostream& error_stream, tree_node *t, char *msg)
 {
@@ -51,6 +54,7 @@ public:
    virtual Symbol get_parent(void) const = 0;
    virtual Symbol get_name(void) const = 0;
    virtual method_class* get_method(Symbol) = 0;
+   virtual int typecheck(ostream& stream) = 0;
 
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
@@ -70,7 +74,7 @@ public:
    tree_node *copy()		 { return copy_Feature(); }
    virtual Feature copy_Feature() = 0;
    virtual Symbol get_name() = 0;
-   virtual Boolean is_method() = 0;
+   virtual bool is_method() = 0;
    virtual Symbol* get_type_addr() = 0;
    virtual void scan(SymbolTable<Symbol, Symbol>*, 
                      SymbolTable<Symbol, method_class>*,
@@ -79,6 +83,7 @@ public:
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
    SymbolTable<Symbol, class__class> claz;
+   virtual int typecheck(ostream& stream) = 0;
 
 #ifdef Feature_EXTRAS
    Feature_EXTRAS
@@ -101,6 +106,9 @@ public:
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
    SymbolTable<Symbol, class__class> claz;
+   virtual bool equals(formal_class *) = 0;
+   virtual Symbol get_type() = 0;
+   virtual int typecheck(ostream &) = 0;
 
 #ifdef Formal_EXTRAS
    Formal_EXTRAS
@@ -122,6 +130,72 @@ public:
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
    SymbolTable<Symbol, class__class> claz;
+   virtual int typecheck(ostream &) = 0;
+   // finds the least upper bound of two types
+   Symbol lub(Symbol s1, Symbol s2) {
+       if (s1 == idtable.lookup_string("SELF_TYPE")
+           && s2 == idtable.lookup_string("SELF_TYPE")) {
+           return idtable.lookup_string("SELF_TYPE");
+       }
+
+       class__class* c1 = (s1 == idtable.lookup_string("SELF_TYPE"))
+         ? claz.lookup(idtable.lookup_string((char*)(cur_classname.c_str()))) : claz.lookup(s1);
+       class__class* c2 = (s2 == idtable.lookup_string("SELF_TYPE"))
+         ? claz.lookup(idtable.lookup_string((char*)(cur_classname.c_str()))) : claz.lookup(s2);
+
+       if (c1 == NULL && c2 == NULL) {
+           return idtable.lookup_string("_no_type");
+       } else if (c1 == NULL) {
+           return s2;
+       } else if (c2 == NULL){
+           return s1;
+       }
+
+       std::set<Symbol> class_set;
+       while (c1) {
+           class_set.insert(((Class__class*)c1)->get_name());
+           c1 = claz.lookup(((Class__class*)c1)->get_parent());
+       }
+       while (c2) {
+           if (class_set.count(((Class__class*)c2)->get_name())) {
+               return ((Class__class*)c2)->get_name();
+           }
+           c2 = claz.lookup(((Class__class*)c2)->get_parent());
+       }
+       return NULL;     
+   }
+
+   bool conform(Symbol atype) {
+       // "_no_type" conforms to any type
+       if (type == idtable.lookup_string("_no_type"))
+           return true;
+       // no type conforms to "_no_type" except itself
+       if (atype == idtable.lookup_string("_no_type"))
+           return false;
+       //SELF_TYPE_C <= SELF_TYPE_C
+       if (type == idtable.lookup_string("SELF_TYPE")
+           && atype == idtable.lookup_string("SELF_TYPE"))
+           return true;
+       // T <= SELF_TYPE_C always false
+       if (atype == idtable.lookup_string("SELF_TYPE"))
+           return false;
+
+       return atype == lub(type, atype);
+   }
+
+   bool isbasictype() {
+     if (type == idtable.lookup_string("Int")
+         || type == idtable.lookup_string("Bool")
+         || type == idtable.lookup_string("String"))
+       return true;
+     return false;
+   }
+
+   bool isselftype() {
+     if (type == idtable.lookup_string("SELF_TYPE")) 
+       return true;
+     return false;
+   }
 
 #ifdef Expression_EXTRAS
    Expression_EXTRAS
@@ -144,6 +218,7 @@ public:
    SymbolTable<Symbol, Symbol> objs;
    SymbolTable<Symbol, method_class> funs;
    SymbolTable<Symbol, class__class> claz;
+   virtual int typecheck(ostream &) = 0;
 
 #ifdef Case_EXTRAS
    Case_EXTRAS
@@ -197,9 +272,11 @@ public:
        for(int idx = classes->first(); classes->more(idx); idx = classes->next(idx)) {
            Class__class *curclass = classes->nth(idx);
 
+           errors += curclass->typecheck(stream);
+           cur_class_filename = curclass->get_filename()->get_string();
+
            //check 'Main' Class
            if (curclass->get_name() == idtable.lookup_string("Main")) {
-             cur_class_filename = curclass->get_filename()->get_string();
              has_Main = true;
              if (curclass->get_method(idtable.lookup_string("main")))
                has_main_meth = true;
@@ -216,6 +293,7 @@ public:
 
        return errors;
   }
+
 
 #ifdef Program_SHARED_EXTRAS
    Program_SHARED_EXTRAS
@@ -266,6 +344,17 @@ public:
        claz = *ctable;
    }
 
+   int typecheck(ostream& stream) {
+       int err = 0;
+       cur_classname = std::string(name->get_string());
+       cur_class_filename = std::string(filename->get_string());
+       for(int idx = features->first(); features->more(idx); idx = features->next(idx)) {
+           err += features->nth(idx)->typecheck(stream);
+       }
+
+       return err;
+   }
+
 #ifdef Class__SHARED_EXTRAS
    Class__SHARED_EXTRAS
 #endif
@@ -293,7 +382,7 @@ public:
    void dump(ostream& stream, int n);
    Symbol get_name() { return name; }
    Symbol* get_type_addr() { return NULL; }
-   Boolean is_method() {return true;}
+   bool is_method() {return true;}
    void scan(SymbolTable<Symbol, Symbol>* otable,
             SymbolTable<Symbol, method_class>* ftable,
             SymbolTable<Symbol, class__class>* ctable) {
@@ -308,6 +397,72 @@ public:
        funs = *ftable;
        claz = *ctable;
        otable->exitscope();
+  }
+
+  int typecheck(ostream& stream) {
+      int err = 0;
+
+      for(int i = formals->first(); formals->more(i); i = formals->next(i)) {
+        err += formals->nth(i)->typecheck(stream);
+      }
+
+      err += expr->typecheck(stream);
+
+#if 0
+      //check the signature is consistent with ancestors
+      SymbolTable<Symbol, method_class> funcopy = funs;
+      funcopy.exitscope();
+      method_class *lastfun = (funcopy.lookup(name));
+      
+      if (lastfun) {
+          if (formals->len() != lastfun->formals->len()) {
+            err++;
+            std::ostringstream msg;
+            msg << "Incompatible number of formal parameters in redefined method " << name << ".";
+            semant_error(stream, this, (char *)(msg.str().c_str()));
+          } else {
+              for(int i = formals->first(), j = lastfun->formals->first();
+                  formals->more(i);
+                  i = formals->next(i), j = lastfun->formals->next(j)) {
+                  if (!formals->nth(i)->equals((formal_class *)(lastfun->formals->nth(j)))) {
+                      err++;
+                      std::ostringstream msg;
+                      msg << "In redefined method " << name << ", paramater type "
+                          << formals->nth(i)->get_type() << " is different from "
+                          << "original type " << lastfun->formals->nth(j)->get_type() << ".";
+                      semant_error(stream, this, (char *)(msg.str().c_str()));
+                  }
+              }
+          }
+          if (lastfun->return_type != return_type) {
+            err++;
+            std::ostringstream msg;
+            msg << "In redefined method " << name << ", return type " << return_type
+                << " is different from original return type " << lastfun->return_type << ".";
+            semant_error(stream, this, (char *)(msg.str().c_str()));
+          }
+      }
+#endif
+
+      //need to check if type exists
+      if (claz.lookup(return_type) == NULL && return_type != idtable.lookup_string("SELF_TYPE")) {
+          err++;
+          std::ostringstream msg;
+          msg << "Undefined return type " << return_type << " in method " << name << ".";
+          semant_error(stream, this, (char *)(msg.str().c_str()));
+      } 
+#if 0
+      else if (!expr->conform(return_type)) {
+        //check if return type match
+          err++;
+          std::ostringstream msg;
+          msg << "Inferred return type " << expr->type << " of method " << name
+              << " does not conform to declared return type " << return_type << ".";
+          semant_error(stream, this, (char *)(msg.str().c_str()));
+      }
+#endif
+
+      return err;
   }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -333,7 +488,7 @@ public:
    }
    Feature copy_Feature();
    void dump(ostream& stream, int n);
-   Boolean is_method() { return false; }
+   bool is_method() { return false; }
    Symbol* get_type_addr() { return &type_decl; }
    Symbol get_name() { return name; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
@@ -346,6 +501,47 @@ public:
        objs = *otable;
        funs = *ftable; 
        claz = *ctable;
+   }
+
+   int typecheck(ostream& stream) {
+       int err = 0;
+       // attribute name cannot be self
+       if (name == idtable.lookup_string("self")) {
+          err++;
+          semant_error(stream, this, "'self' cannot be the name of an attribute.");
+       }
+       // inherited attributes cannot be redefined
+       SymbolTable<Symbol, Symbol> objcopy = objs;
+       objcopy.exitscope();
+       Symbol* lastobj = objcopy.lookup(name);
+       if (lastobj) {
+          err++;
+          std::ostringstream msg;
+          msg << "Attribute " << name << " is an attribute of an inherited class.";
+          semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+
+       // check if type exist
+       class__class *decl = claz.lookup(type_decl);
+       if (decl == NULL && type_decl != idtable.lookup_string("SELF_TYPE")) {
+         err++;
+         std::ostringstream msg;
+         msg << "Class " << type_decl << " of attribute " << name << " is undefined.";
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       if (init) {
+         err += init->typecheck(stream);
+         // check if init conform to type_decl
+         if (!init->conform(type_decl)) {
+           err++;
+           std::ostringstream msg;
+           msg << "Inferred type " << init->type << " of initialization of attribute "
+               << name << " does not conform to declared type " << type_decl << ".";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+         }
+       }
+        
+       return err;
    }
 
 #ifdef Feature_SHARED_EXTRAS
@@ -370,6 +566,7 @@ public:
    Formal copy_Formal();
    void dump(ostream& stream, int n);
    Symbol get_name() { return name; }
+   Symbol get_type() { return type_decl; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable,
              SymbolTable<Symbol, class__class>* ctable) {
@@ -378,6 +575,30 @@ public:
        objs = *otable;
        funs = *ftable; 
        claz = *ctable;
+   }
+   bool equals(formal_class* curformal) {return type_decl == curformal->get_type();}
+
+   int typecheck(ostream& stream) {
+       int err = 0;
+       // check if name is self
+       if (name == idtable.lookup_string("self")) {
+           err++;
+           semant_error(stream, this, "'self' cannot be the name of a formal parameter.");
+       }
+
+       // check if type exist
+       if (type_decl == idtable.lookup_string("SELF_TYPE")) {
+           err++;
+           std::ostringstream msg;
+           msg << "Formal parameter " << name << " cannot have type SELF_TYPE.";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       } else if (claz.lookup(type_decl) == NULL) {
+           err++;
+           std::ostringstream msg;
+           msg << "Class " << type_decl << " of formal parameter " << name << " is undefined.";
+           semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+       return err;
    }
 
 #ifdef Formal_SHARED_EXTRAS
@@ -417,6 +638,10 @@ public:
       claz = *ctable;
       otable->exitscope();
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Case_SHARED_EXTRAS
    Case_SHARED_EXTRAS
@@ -449,6 +674,10 @@ public:
        claz = *ctable;
    }
 
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
 #endif
@@ -472,6 +701,8 @@ public:
       name = a3;
       actual = a4;
    }
+   Expression copy_Expression();
+   void dump(ostream& stream, int n);
    Symbol get_name() { return name; }
    void scan(SymbolTable<Symbol, Symbol>* otable,
              SymbolTable<Symbol, method_class>* ftable,
@@ -485,8 +716,11 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
-   Expression copy_Expression();
-   void dump(ostream& stream, int n);
+
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -524,6 +758,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -552,6 +790,10 @@ public:
        SymbolTable<Symbol, method_class>* ftable,
        SymbolTable<Symbol, class__class>* ctable ) {
        return;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -584,6 +826,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -618,6 +864,10 @@ public:
        funs = *ftable; 
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -648,6 +898,10 @@ public:
        objs = *otable;
        funs = *ftable; 
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -689,6 +943,10 @@ public:
        claz = *ctable;
        otable->exitscope();
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -720,6 +978,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -753,6 +1015,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -784,6 +1050,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -817,6 +1087,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -845,6 +1119,24 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+
+   int typecheck(ostream& stream) {
+       int err = 0;
+
+       err += e1->typecheck(stream);
+       //e1 is int
+       if (e1->type != idtable.lookup_string("Int")) {
+         err++;
+         std::ostringstream msg;
+         msg << "Argument of '~' has type " << e1->type << " instead of Int.";
+         semant_error(stream, this, (char *)(msg.str().c_str()));
+       }
+
+       //type = Bool
+       type = idtable.lookup_string("Bool");
+
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -878,6 +1170,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -909,6 +1205,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -942,6 +1242,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -971,6 +1275,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -997,6 +1305,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -1025,6 +1337,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -1052,6 +1368,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -1078,6 +1398,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -1108,6 +1432,10 @@ public:
        funs = *ftable;
        claz = *ctable;
    }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
+   }
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -1132,6 +1460,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 #ifdef Expression_SHARED_EXTRAS
@@ -1160,6 +1492,10 @@ public:
        objs = *otable;
        funs = *ftable;
        claz = *ctable;
+   }
+   int typecheck(ostream& stream) {
+       int err = 0;
+       return err;
    }
 
 
